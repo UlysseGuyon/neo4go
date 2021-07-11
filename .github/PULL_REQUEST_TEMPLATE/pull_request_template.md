@@ -1,0 +1,13 @@
+* **Please check if this PR fulfills these requirements**
+  - [ ] Minimum unit testing has been added
+  - [ ] All new functions / classes / interfaces have been documented and commented
+
+* **What kind of change does this PR introduce ?**
+  - Bug fixes
+    - ...
+  - New features
+    - ...
+  - Added missing doc
+    - ...
+  - Breaking changes
+    - ...
