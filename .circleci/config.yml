@@ -45,7 +45,7 @@ jobs:
           coverprofile: << parameters.artifact_name >>.out
       - run:
           command: go tool cover -html="<< parameters.artifact_name >>.out" -o << parameters.artifact_name >>.html
-      - store_test_results:
+      - store_artifacts:
           path: << parameters.artifact_name >>.html
 
 workflows:
