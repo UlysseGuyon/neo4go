@@ -1,13 +1,13 @@
 package errors
 
-type Neo4JUnknownError struct{}
+type Neo4GoUnknownError struct{}
 
-func (err Neo4JUnknownError) Error() string {
+func (err Neo4GoUnknownError) Error() string {
 	return errorFmt("Unknown", "An unknown error has occured")
 }
 
-func (err Neo4JUnknownError) IsConnError() bool       { return false }
-func (err Neo4JUnknownError) IsInitError() bool       { return false }
-func (err Neo4JUnknownError) IsQueryBuildError() bool { return false }
-func (err Neo4JUnknownError) IsQueryError() bool      { return false }
-func (err Neo4JUnknownError) IsUnknownError() bool    { return true }
+func (err Neo4GoUnknownError) IsConnError() bool       { return false }
+func (err Neo4GoUnknownError) IsInitError() bool       { return false }
+func (err Neo4GoUnknownError) IsQueryBuildError() bool { return false }
+func (err Neo4GoUnknownError) IsQueryError() bool      { return false }
+func (err Neo4GoUnknownError) IsUnknownError() bool    { return true }

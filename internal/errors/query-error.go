@@ -2,12 +2,12 @@ package errors
 
 import "fmt"
 
-type Neo4JQueryError struct {
+type Neo4GoQueryError struct {
 	Bare   bool
 	Reason string
 }
 
-func (err Neo4JQueryError) Error() string {
+func (err Neo4GoQueryError) Error() string {
 	if err.Bare {
 		return errorFmt("Query", fmt.Sprintf(
 			"The Neo4J query could not be run because %s",
@@ -18,8 +18,8 @@ func (err Neo4JQueryError) Error() string {
 	}
 }
 
-func (err Neo4JQueryError) IsConnError() bool       { return false }
-func (err Neo4JQueryError) IsInitError() bool       { return false }
-func (err Neo4JQueryError) IsQueryBuildError() bool { return false }
-func (err Neo4JQueryError) IsQueryError() bool      { return true }
-func (err Neo4JQueryError) IsUnknownError() bool    { return false }
+func (err Neo4GoQueryError) IsConnError() bool       { return false }
+func (err Neo4GoQueryError) IsInitError() bool       { return false }
+func (err Neo4GoQueryError) IsQueryBuildError() bool { return false }
+func (err Neo4GoQueryError) IsQueryError() bool      { return true }
+func (err Neo4GoQueryError) IsUnknownError() bool    { return false }

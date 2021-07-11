@@ -1,11 +1,10 @@
 package neo4go
 
-import (
-	internalTypes "github.com/UlysseGuyon/neo4go/internal/types"
-)
+import "github.com/UlysseGuyon/neo4go/internal/neo4go"
 
 const (
-	ExpectedResult0 internalTypes.ExpectedResult = iota
-	ExpectedResult1
-	ExpectedResultMultiple
+	ConcurrencyModeMultiWrite        = neo4go.ConcurrencyModeMultiWrite
+	ConcurrencyModeOneWriteMultiRead = neo4go.ConcurrencyModeOneWriteMultiRead
+	ConcurrencyModeOnlyMultiRead     = neo4go.ConcurrencyModeOnlyMultiRead
+	ConcurrencyModeNoConcurrency     = neo4go.ConcurrencyModeNoConcurrency
 )
