@@ -6,7 +6,7 @@ orbs:
 jobs:
   build-example:
     parameters:
-      name:
+      example_name:
         type: string
         default: basics
       go_version:
@@ -22,9 +22,9 @@ jobs:
       - go/mod-download-cached
       - run:
           name: Build 
-          command: go build ./examples/<< parameters.name >>/main.go -o << parameters.name >>
+          command: go build ./examples/<< parameters.example_name >>/main.go -o << parameters.example_name >>
       - store_artifacts:
-          path: << parameters.name >>
+          path: << parameters.example_name >>
   unit-tests:
     parameters:
       go_version:
@@ -52,9 +52,9 @@ workflows:
   build-all-examples:
     jobs:
       - build-example:
-          name: basics
+          example_name: basics
       - build-example:
-          name: transactions
+          example_name: transactions
   run-unit-tests:
     jobs:
       - unit-tests
