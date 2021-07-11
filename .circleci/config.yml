@@ -22,7 +22,7 @@ jobs:
       - go/mod-download-cached
       - run:
           name: Build 
-          command: go build ./examples/<< parameters.example_name >>/main.go -o << parameters.example_name >>
+          command: go build -o << parameters.example_name >> ./examples/<< parameters.example_name >>/main.go
       - store_artifacts:
           path: << parameters.example_name >>
   unit-tests:
