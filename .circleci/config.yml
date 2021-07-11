@@ -1,0 +1,60 @@
+version: 2.1
+
+orbs:
+  go: circleci/go@1.7.0
+
+jobs:
+  build-example:
+    parameters:
+      name:
+        type: string
+        default: basics
+      go_version:
+        type: string
+        default: "1.15.13"
+    executor:
+      name: go/default
+      tag: '<< parameters.go_version >>'
+    steps:
+      - checkout
+      - go/install:
+          version: << parameters.go_version >>
+      - go/mod-download-cached
+      - run:
+          name: Build 
+          command: go build ./examples/<< parameters.name >>/main.go -o << parameters.name >>
+      - store_artifacts:
+          path: << parameters.name >>
+  unit-tests:
+    parameters:
+      go_version:
+        type: string
+        default: "1.15.13"
+      artifact_name:
+        type: string
+        default: coverage
+    executor:
+      name: go/default
+      tag: '<< parameters.go_version >>'
+    steps:
+      - checkout
+      - go/install:
+          version: << parameters.go_version >>
+      - go/mod-download-cached
+      - go/test:
+          coverprofile: << parameters.artifact_name >>.out
+      - run:
+          command: go tool cover -html="<< parameters.artifact_name >>.out" -o << parameters.artifact_name >>.html
+      - store_test_results:
+          path: << parameters.artifact_name >>.html
+
+workflows:
+  build-all-examples:
+    jobs:
+      - build-example:
+          name: basics
+      - build-example:
+          name: transactions
+  run-unit-tests:
+    jobs:
+      - unit-tests
