@@ -26,10 +26,6 @@ func validateManagerOptions(opt ManagerOptions) internalErr.Neo4GoError {
 	return nil
 }
 
-func setManagerOptionsDefaultValues(opt ManagerOptions) ManagerOptions {
-	return opt
-}
-
 func isWriteQuery(query string) bool {
 	isWrite := false
 

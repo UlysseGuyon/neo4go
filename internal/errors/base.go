@@ -7,6 +7,14 @@ type Neo4GoError interface {
 	FmtError() string
 }
 
+const (
+	InitErrorTypeName     = "Init"
+	TypeErrorTypeName     = "Type"
+	DecodingErrorTypeName = "Decoding"
+	QueryErrorTypeName    = "Query"
+	UnknownErrorTypeName  = "Unknown"
+)
+
 type InitError struct {
 	Err    string
 	URI    string
@@ -18,7 +26,7 @@ func (err *InitError) Error() string {
 }
 
 func (err *InitError) FmtError() string {
-	return errorFmt("Init", err.Error())
+	return errorFmt(InitErrorTypeName, err.Error())
 }
 
 type TypeError struct {

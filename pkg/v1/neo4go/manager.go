@@ -73,26 +73,25 @@ func (m *manager) Init(options ManagerOptions) internalErr.Neo4GoError {
 	if optErr != nil {
 		return optErr
 	}
-	usedOptions := setManagerOptionsDefaultValues(options)
 
 	usedAuth := neo4j.NoAuth()
-	if usedOptions.CustomAuth != nil {
-		usedAuth = *usedOptions.CustomAuth
-	} else if usedOptions.Username != "" && usedOptions.Password != "" {
-		usedAuth = neo4j.BasicAuth(usedOptions.Username, usedOptions.Password, usedOptions.Realm)
+	if options.CustomAuth != nil {
+		usedAuth = *options.CustomAuth
+	} else if options.Username != "" && options.Password != "" {
+		usedAuth = neo4j.BasicAuth(options.Username, options.Password, options.Realm)
 	}
 
 	newDriver, err := neo4j.NewDriver(
-		usedOptions.URI,
+		options.URI,
 		usedAuth,
-		usedOptions.Configurers...,
+		options.Configurers...,
 	)
 
 	if err != nil {
 		return internalErr.ToDriverError(err)
 	}
 
-	m.options = &usedOptions
+	m.options = &options
 	m.driver = &newDriver
 
 	return nil
