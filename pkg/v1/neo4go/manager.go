@@ -7,6 +7,7 @@ import (
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
 
+// TODO comment
 type Manager interface {
 	Init(ManagerOptions) internalErr.Neo4GoError
 	IsConnected() bool
