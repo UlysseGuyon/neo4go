@@ -1,6 +1,8 @@
 package neo4go
 
 import (
+	"fmt"
+
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
 	internalMain "github.com/UlysseGuyon/neo4go/internal/neo4go"
 	internalTypes "github.com/UlysseGuyon/neo4go/internal/types"
@@ -21,9 +23,8 @@ func NewManager(options ManagerOptions) (Manager, internalErr.Neo4GoError) {
 	}
 
 	if !newManager.IsConnected() {
-		return nil, internalErr.Neo4GoConnError{
-			URI:    options.URI,
-			DBName: options.DatabaseName,
+		return nil, &internalErr.InitError{
+			Err: fmt.Sprintf("Could not connect to %s/%s", options.URI, options.DatabaseName),
 		}
 	}
 
@@ -51,10 +52,7 @@ func (m *manager) Init(options ManagerOptions) internalErr.Neo4GoError {
 	)
 
 	if err != nil {
-		return internalErr.Neo4GoInitError{
-			Bare:   false,
-			Reason: err.Error(),
-		}
+		return internalErr.ToDriverError(err)
 	}
 
 	m.options = &usedOptions
@@ -76,7 +74,7 @@ func (m *manager) IsConnected() bool {
 func (m *manager) Close() internalErr.Neo4GoError {
 	err := (*m.driver).Close()
 	if err != nil {
-		return internalErr.Neo4GoUnknownError{}
+		return internalErr.ToDriverError(err)
 	}
 
 	return nil
@@ -100,17 +98,13 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 		Bookmarks:    queryParams.Bookmarks,
 	})
 	if err != nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Reason: err.Error(),
-		}
+		return nil, internalErr.ToDriverError(err)
 	}
 	defer session.Close()
 
 	rawResult, err := session.Run(queryParams.Query, paramsMap, queryParams.Configurers...)
 	if err != nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Reason: err.Error(),
-		}
+		return nil, internalErr.ToDriverError(err)
 	}
 
 	convertedResult := newQueryResult(rawResult)
@@ -174,9 +168,7 @@ func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryR
 		Bookmarks:    transactionGlobalParams.Bookmarks,
 	})
 	if err != nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Reason: err.Error(),
-		}
+		return nil, internalErr.ToDriverError(err)
 	}
 	defer session.Close()
 
@@ -189,15 +181,13 @@ func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryR
 	}
 
 	if transactionErr != nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Reason: transactionErr.Error(),
-		}
+		return nil, internalErr.ToDriverError(err)
 	}
 
 	transactionResult, canConvert := transactionResultI.(QueryResult)
 	if !canConvert {
-		return nil, &internalErr.Neo4GoQueryError{
-			Reason: "Could not convert transaction result to structured QueryResult",
+		return nil, &internalErr.TypeError{
+			Err: "Could not convert transaction result to structured QueryResult",
 		}
 	}
 

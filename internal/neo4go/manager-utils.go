@@ -23,16 +23,14 @@ func CloseSessionChanel(ch chan neo4j.Session) error {
 
 func ValidateManagerOptions(opt internalTypes.ManagerOptions) internalErr.Neo4GoError {
 	if opt.URI == "" {
-		return internalErr.Neo4GoInitError{
-			Bare:   false,
-			Reason: "Database URI given in options is empty",
+		return &internalErr.InitError{
+			Err: "Database URI given in options is empty",
 		}
 	}
 
 	if opt.DatabaseName == "" {
-		return internalErr.Neo4GoInitError{
-			Bare:   false,
-			Reason: "Database name given in options is empty",
+		return &internalErr.InitError{
+			Err: "Database name given in options is empty",
 		}
 	}
 

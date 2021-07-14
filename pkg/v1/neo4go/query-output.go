@@ -30,40 +30,33 @@ func Single(from QueryResult, err error) (*RecordMap, internalErr.Neo4GoError) {
 	var record *RecordMap
 
 	if err != nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Bare:   true,
-			Reason: err.Error(),
+		if convertedErr, canConvert := err.(internalErr.Neo4GoError); canConvert {
+			return nil, convertedErr
 		}
+
+		return nil, internalErr.ToDriverError(err)
 	}
 
 	if from.Next() {
 		record, err = from.Record()
 		if err != nil {
-			return nil, &internalErr.Neo4GoQueryError{
-				Bare:   true,
-				Reason: err.Error(),
-			}
+			return nil, internalErr.ToDriverError(err)
 		}
 	}
 
 	if err := from.Err(); err != nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Bare:   true,
-			Reason: err.Error(),
-		}
+		return nil, internalErr.ToDriverError(err)
 	}
 
 	if record == nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Bare:   true,
-			Reason: "Result contains no record",
+		return nil, &internalErr.QueryError{
+			Err: "Result contains no record",
 		}
 	}
 
 	if from.Next() {
-		return nil, &internalErr.Neo4GoQueryError{
-			Bare:   true,
-			Reason: "Result contains more than one record",
+		return nil, &internalErr.QueryError{
+			Err: "Result contains more than one record",
 		}
 	}
 
@@ -77,34 +70,24 @@ func Collect(from QueryResult, err error) ([]RecordMap, internalErr.Neo4GoError)
 	var list []RecordMap
 
 	if err != nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Bare:   true,
-			Reason: err.Error(),
-		}
+		return nil, internalErr.ToDriverError(err)
 	}
 
 	for from.Next() {
 		record, err := from.Record()
 		if err != nil {
-			return nil, &internalErr.Neo4GoQueryError{
-				Bare:   true,
-				Reason: err.Error(),
-			}
+			return nil, internalErr.ToDriverError(err)
 		}
 		if record == nil {
-			return nil, &internalErr.Neo4GoQueryError{
-				Bare:   true,
-				Reason: "Result contains a null record",
+			return nil, &internalErr.QueryError{
+				Err: "Result contains a null record",
 			}
 		}
 		list = append(list, *record)
 	}
 
 	if err := from.Err(); err != nil {
-		return nil, &internalErr.Neo4GoQueryError{
-			Bare:   true,
-			Reason: err.Error(),
-		}
+		return nil, internalErr.ToDriverError(err)
 	}
 
 	return list, nil

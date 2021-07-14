@@ -19,7 +19,7 @@ type neo4goDecoder struct {
 	DecoderOptions mapstructure.DecoderConfig
 }
 
-func NewNeo4GoDecoder(options mapstructure.DecoderConfig) (Neo4GoDecoder, internalErr.Neo4GoError) {
+func NewNeo4GoDecoder(options mapstructure.DecoderConfig) Neo4GoDecoder {
 	if options.TagName == "" {
 		options.TagName = internalMain.DefaultDecodingTagName
 	}
@@ -28,15 +28,14 @@ func NewNeo4GoDecoder(options mapstructure.DecoderConfig) (Neo4GoDecoder, intern
 		DecoderOptions: options,
 	}
 
-	return &newNeo4GoDecoder, nil
+	return &newNeo4GoDecoder
 }
 
 func (decoder *neo4goDecoder) decodeSingleValue(mapInput map[string]interface{}, output interface{}) internalErr.Neo4GoError {
 	outputKind := reflect.ValueOf(output).Kind()
 	if outputKind != reflect.Ptr && outputKind != reflect.Interface {
-		return &internalErr.Neo4GoInitError{
-			Bare:   false,
-			Reason: "output must ba a pointer",
+		return &internalErr.TypeError{
+			Err: "output must ba a pointer",
 		}
 	}
 
@@ -44,15 +43,16 @@ func (decoder *neo4goDecoder) decodeSingleValue(mapInput map[string]interface{},
 
 	mapDecoder, err := mapstructure.NewDecoder(&decoder.DecoderOptions)
 	if err != nil {
-		return &internalErr.Neo4GoInitError{
-			Bare:   false,
-			Reason: err.Error(),
+		return &internalErr.DecodingError{
+			Err: err.Error(),
 		}
 	}
 
 	err = mapDecoder.Decode(mapInput)
 	if err != nil {
-		return &internalErr.Neo4GoUnknownError{}
+		return &internalErr.DecodingError{
+			Err: err.Error(),
+		}
 	}
 
 	return nil
@@ -60,7 +60,9 @@ func (decoder *neo4goDecoder) decodeSingleValue(mapInput map[string]interface{},
 
 func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) internalErr.Neo4GoError {
 	if node == nil {
-		return &internalErr.Neo4GoUnknownError{}
+		return &internalErr.TypeError{
+			Err: "Decoded node cannot be null",
+		}
 	}
 
 	resultArray := make([]neo4j.Node, 0)
@@ -93,9 +95,8 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 			}
 		}
 	default:
-		return &internalErr.Neo4GoInitError{
-			Bare:   false,
-			Reason: "Input is not a node or node array",
+		return &internalErr.TypeError{
+			Err: "Input is not a node or node array",
 		}
 	}
 
@@ -114,7 +115,9 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 		if len(resultArray) > 0 {
 			usedNode = resultArray[0]
 		} else {
-			return &internalErr.Neo4GoUnknownError{}
+			return &internalErr.DecodingError{
+				Err: "Could not decode one node to fit in output",
+			}
 		}
 
 		err := decoder.decodeSingleValue(usedNode.Props(), output)
@@ -124,7 +127,9 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 	} else {
 		for i := 0; i < outputReflect.Len(); i++ {
 			if i > len(resultArray) {
-				return &internalErr.Neo4GoUnknownError{}
+				return &internalErr.DecodingError{
+					Err: "Could not decode enough nodes to fit in output",
+				}
 			}
 			usedNode := resultArray[i]
 
@@ -133,9 +138,13 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 				outputReflectItem = outputReflectItem.Elem()
 			}
 			if !outputReflectItem.CanInterface() {
-				return &internalErr.Neo4GoUnknownError{}
+				return &internalErr.TypeError{
+					Err: "Output list item cannot be converted as interface",
+				}
 			} else if !outputReflectItem.CanSet() {
-				return &internalErr.Neo4GoUnknownError{}
+				return &internalErr.TypeError{
+					Err: "Output list item value cannot be written",
+				}
 			}
 			outputItemInterface := outputReflectItem.Interface()
 
@@ -156,7 +165,9 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 
 func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, output interface{}) internalErr.Neo4GoError {
 	if relationship == nil {
-		return &internalErr.Neo4GoUnknownError{}
+		return &internalErr.TypeError{
+			Err: "Decoded relationship cannot be null",
+		}
 	}
 
 	resultArray := make([]neo4j.Relationship, 0)
@@ -189,9 +200,8 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 			}
 		}
 	default:
-		return &internalErr.Neo4GoInitError{
-			Bare:   false,
-			Reason: "Input is not a relationship or relationship array",
+		return &internalErr.TypeError{
+			Err: "Input is not a relationship or relationship array",
 		}
 	}
 
@@ -210,7 +220,9 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 		if len(resultArray) > 0 {
 			usedRelationship = resultArray[0]
 		} else {
-			return &internalErr.Neo4GoUnknownError{}
+			return &internalErr.DecodingError{
+				Err: "Could not decode one relationship to fit in output",
+			}
 		}
 
 		err := decoder.decodeSingleValue(usedRelationship.Props(), output)
@@ -220,7 +232,9 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 	} else {
 		for i := 0; i < outputReflect.Len(); i++ {
 			if i > len(resultArray) {
-				return &internalErr.Neo4GoUnknownError{}
+				return &internalErr.DecodingError{
+					Err: "Could not decode enough relationships to fit in output",
+				}
 			}
 			usedRelationship := resultArray[i]
 
@@ -229,9 +243,13 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 				outputReflectItem = outputReflectItem.Elem()
 			}
 			if !outputReflectItem.CanInterface() {
-				return &internalErr.Neo4GoUnknownError{}
+				return &internalErr.TypeError{
+					Err: "Output list item cannot be converted as interface",
+				}
 			} else if !outputReflectItem.CanSet() {
-				return &internalErr.Neo4GoUnknownError{}
+				return &internalErr.TypeError{
+					Err: "Output list item value cannot be written",
+				}
 			}
 			outputItemInterface := outputReflectItem.Interface()
 
@@ -252,7 +270,9 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 
 func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface{}, outputRelationships interface{}) internalErr.Neo4GoError {
 	if path == nil {
-		return &internalErr.Neo4GoUnknownError{}
+		return &internalErr.TypeError{
+			Err: "Decoded path cannot be null",
+		}
 	}
 
 	resultNodeArray := make([]neo4j.Node, 0)
@@ -268,9 +288,8 @@ func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface
 			resultRelationshipArray = append(resultRelationshipArray, (*typedPath).Relationships()...)
 		}
 	default:
-		return &internalErr.Neo4GoInitError{
-			Bare:   false,
-			Reason: "Input is not a path",
+		return &internalErr.TypeError{
+			Err: "Input is not a path",
 		}
 	}
 
