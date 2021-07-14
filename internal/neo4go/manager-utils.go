@@ -40,10 +40,6 @@ func ValidateManagerOptions(opt internalTypes.ManagerOptions) internalErr.Neo4Go
 }
 
 func SetManagerOptionsDefaultValues(opt internalTypes.ManagerOptions) internalTypes.ManagerOptions {
-	if opt.Concurrency == 0 {
-		opt.Concurrency = ConcurrencyModeOneWriteMultiRead
-	}
-
 	return opt
 }
 

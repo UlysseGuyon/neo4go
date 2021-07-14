@@ -106,8 +106,6 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 	}
 	defer session.Close()
 
-	// TODO Check concurrency here
-
 	rawResult, err := session.Run(queryParams.Query, paramsMap, queryParams.Configurers...)
 	if err != nil {
 		return nil, &internalErr.Neo4GoQueryError{
@@ -181,8 +179,6 @@ func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryR
 		}
 	}
 	defer session.Close()
-
-	// TODO check concurrency here
 
 	var transactionResultI interface{}
 	var transactionErr error

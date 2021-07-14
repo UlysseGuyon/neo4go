@@ -12,5 +12,4 @@ type ManagerOptions struct {
 	Password     string
 	CustomAuth   *neo4j.AuthToken
 	Configurers  []func(*neo4j.Config)
-	Concurrency  uint
 }
