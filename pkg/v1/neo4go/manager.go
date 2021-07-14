@@ -35,7 +35,7 @@ type QueryParams struct {
 type TransactionStepParams struct {
 	Query          string
 	Params         map[string]InputStruct
-	TransitionFunc func(QueryResult) map[string]InputStruct
+	TransitionFunc func(QueryResult) (map[string]InputStruct, error)
 }
 
 type TransactionParams struct {
@@ -175,7 +175,14 @@ func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryR
 			lastResult = newQueryResult(result)
 
 			if transactionParams.TransitionFunc != nil {
-				nextQueryParams = transactionParams.TransitionFunc(lastResult)
+				nextQueryParams, err = transactionParams.TransitionFunc(lastResult)
+				if err != nil {
+					rollErr := tx.Rollback()
+					if rollErr != nil {
+						return nil, rollErr
+					}
+					return nil, err
+				}
 			}
 		}
 
@@ -217,7 +224,10 @@ func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryR
 	}
 
 	if transactionErr != nil {
-		return nil, internalErr.ToDriverError(err)
+		if convertedErr, canConvert := transactionErr.(internalErr.Neo4GoError); canConvert {
+			return nil, convertedErr
+		}
+		return nil, internalErr.ToDriverError(transactionErr)
 	}
 
 	transactionResult, canConvert := transactionResultI.(QueryResult)

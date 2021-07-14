@@ -1,7 +1,87 @@
 package main
 
-import "log"
+import (
+	"errors"
+	"log"
+
+	"github.com/UlysseGuyon/neo4go/pkg/v1/neo4go"
+	"github.com/mitchellh/mapstructure"
+)
+
+type User struct {
+	Name string `neo4j:"name"`
+}
+
+func (u *User) ConvertToMap() map[string]neo4go.InputStruct {
+	return map[string]neo4go.InputStruct{
+		"name": neo4go.NewInputString(&u.Name),
+	}
+}
 
 func main() {
-	log.Println("TODO implement transaction example")
+	options := neo4go.ManagerOptions{
+		URI:          "<YOUR_DATABASE_URI>",
+		DatabaseName: "<YOUR_DATABASE_NAME>",
+		Username:     "<YOUR_USERNAME>",
+		Password:     "<YOUR_PASSWORD>",
+	}
+
+	manager, err := neo4go.NewManager(options)
+	if err != nil {
+		log.Fatalln(err.FmtError())
+	}
+	defer manager.Close()
+
+	decoder := neo4go.NewNeo4GoDecoder(mapstructure.DecoderConfig{})
+
+	transactionParams := neo4go.TransactionParams{
+		TransactionSteps: []neo4go.TransactionStepParams{
+			{
+				Query: "WITH $newUser AS newU CREATE (u:User {name: newU.name}) RETURN u",
+				Params: map[string]neo4go.InputStruct{
+					"newUser": &User{Name: "Alice"},
+				},
+				TransitionFunc: func(qr neo4go.QueryResult) (map[string]neo4go.InputStruct, error) {
+					record, err := neo4go.Single(qr, nil)
+					if err != nil {
+						return nil, err
+					}
+
+					userNode, exists := record.Nodes["u"]
+					if !exists {
+						return nil, errors.New("User is null or not a node !")
+					}
+
+					user := User{}
+					err = decoder.DecodeNode(userNode, &user)
+					if err != nil {
+						return nil, err
+					}
+
+					return map[string]neo4go.InputStruct{
+						"userName": neo4go.NewInputString(&user.Name),
+					}, nil
+				},
+			},
+			{
+				Query: "MATCH (u:User {name: $userName}) SET u.id = 'abcd' RETURN u",
+			},
+		},
+	}
+	record, err := neo4go.Single(manager.Transaction(transactionParams))
+	if err != nil {
+		log.Fatalln(err.FmtError())
+	}
+
+	userNode, exists := record.Nodes["u"]
+	if !exists {
+		log.Fatalln("u is null or not a node !")
+	}
+	user := User{}
+	err = decoder.DecodeNode(userNode, &user)
+	if err != nil {
+		log.Fatalln(err.FmtError())
+	}
+
+	log.Printf("Saved user : %+v !", user)
 }
