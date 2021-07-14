@@ -24,7 +24,9 @@ func NewManager(options ManagerOptions) (Manager, internalErr.Neo4GoError) {
 
 	if !newManager.IsConnected() {
 		return nil, &internalErr.InitError{
-			Err: fmt.Sprintf("Could not connect to %s/%s", options.URI, options.DatabaseName),
+			Err:    "Could not connect to database",
+			URI:    options.URI,
+			DBName: options.DatabaseName,
 		}
 	}
 
@@ -187,7 +189,9 @@ func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryR
 	transactionResult, canConvert := transactionResultI.(QueryResult)
 	if !canConvert {
 		return nil, &internalErr.TypeError{
-			Err: "Could not convert transaction result to structured QueryResult",
+			Err:           "Could not convert transaction result to structured QueryResult",
+			ExpectedTypes: []string{"QueryResult"},
+			GotType:       fmt.Sprintf("%T", transactionResultI),
 		}
 	}
 

@@ -5,32 +5,22 @@ import (
 
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
 	internalTypes "github.com/UlysseGuyon/neo4go/internal/types"
-	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
-
-func CloseSessionChanel(ch chan neo4j.Session) error {
-	close(ch)
-
-	for session, ok := <-ch; ok; session, ok = <-ch {
-		err := session.Close()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 func ValidateManagerOptions(opt internalTypes.ManagerOptions) internalErr.Neo4GoError {
 	if opt.URI == "" {
 		return &internalErr.InitError{
-			Err: "Database URI given in options is empty",
+			Err:    "Database URI given in options is empty",
+			DBName: opt.DatabaseName,
+			URI:    opt.URI,
 		}
 	}
 
 	if opt.DatabaseName == "" {
 		return &internalErr.InitError{
-			Err: "Database name given in options is empty",
+			Err:    "Database name given in options is empty",
+			DBName: opt.DatabaseName,
+			URI:    opt.URI,
 		}
 	}
 

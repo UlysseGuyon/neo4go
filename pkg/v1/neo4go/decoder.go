@@ -1,6 +1,7 @@
 package neo4go
 
 import (
+	"fmt"
 	"reflect"
 
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
@@ -35,7 +36,9 @@ func (decoder *neo4goDecoder) decodeSingleValue(mapInput map[string]interface{},
 	outputKind := reflect.ValueOf(output).Kind()
 	if outputKind != reflect.Ptr && outputKind != reflect.Interface {
 		return &internalErr.TypeError{
-			Err: "output must ba a pointer",
+			Err:           "Output must be a pointer",
+			ExpectedTypes: []string{fmt.Sprintf("%T Pointer", output)},
+			GotType:       fmt.Sprintf("%T", output),
 		}
 	}
 
@@ -59,9 +62,20 @@ func (decoder *neo4goDecoder) decodeSingleValue(mapInput map[string]interface{},
 }
 
 func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) internalErr.Neo4GoError {
+	expectedTypes := []string{
+		"Node",
+		"*Node",
+		"[]Node",
+		"*[]Node",
+		"[]*Node",
+		"*[]*Node",
+	}
+
 	if node == nil {
 		return &internalErr.TypeError{
-			Err: "Decoded node cannot be null",
+			Err:           "Decoded node cannot be null",
+			ExpectedTypes: expectedTypes,
+			GotType:       "null",
 		}
 	}
 
@@ -96,7 +110,9 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 		}
 	default:
 		return &internalErr.TypeError{
-			Err: "Input is not a node or node array",
+			Err:           "Input is not a node or node array",
+			ExpectedTypes: expectedTypes,
+			GotType:       fmt.Sprintf("%T", node),
 		}
 	}
 
@@ -139,11 +155,15 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 			}
 			if !outputReflectItem.CanInterface() {
 				return &internalErr.TypeError{
-					Err: "Output list item cannot be converted as interface",
+					Err:           "Output list item cannot be converted as interface",
+					ExpectedTypes: []string{"interface{}"},
+					GotType:       outputReflectItem.Type().Name(),
 				}
 			} else if !outputReflectItem.CanSet() {
 				return &internalErr.TypeError{
-					Err: "Output list item value cannot be written",
+					Err:           "Output list item value cannot be written",
+					ExpectedTypes: []string{"Any"},
+					GotType:       outputReflectItem.Type().Name(),
 				}
 			}
 			outputItemInterface := outputReflectItem.Interface()
@@ -164,9 +184,20 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 }
 
 func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, output interface{}) internalErr.Neo4GoError {
+	expectedTypes := []string{
+		"Relationship",
+		"*Relationship",
+		"[]Relationship",
+		"*[]Relationship",
+		"[]*Relationship",
+		"*[]*Relationship",
+	}
+
 	if relationship == nil {
 		return &internalErr.TypeError{
-			Err: "Decoded relationship cannot be null",
+			Err:           "Decoded relationship cannot be null",
+			ExpectedTypes: expectedTypes,
+			GotType:       "null",
 		}
 	}
 
@@ -201,7 +232,9 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 		}
 	default:
 		return &internalErr.TypeError{
-			Err: "Input is not a relationship or relationship array",
+			Err:           "Input is not a relationship or relationship array",
+			ExpectedTypes: expectedTypes,
+			GotType:       fmt.Sprintf("%T", relationship),
 		}
 	}
 
@@ -244,11 +277,15 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 			}
 			if !outputReflectItem.CanInterface() {
 				return &internalErr.TypeError{
-					Err: "Output list item cannot be converted as interface",
+					Err:           "Output list item cannot be converted as interface",
+					ExpectedTypes: []string{"interface{}"},
+					GotType:       outputReflectItem.Type().Name(),
 				}
 			} else if !outputReflectItem.CanSet() {
 				return &internalErr.TypeError{
-					Err: "Output list item value cannot be written",
+					Err:           "Output list item value cannot be written",
+					ExpectedTypes: []string{"Any"},
+					GotType:       outputReflectItem.Type().Name(),
 				}
 			}
 			outputItemInterface := outputReflectItem.Interface()
@@ -269,9 +306,16 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 }
 
 func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface{}, outputRelationships interface{}) internalErr.Neo4GoError {
+	expectedTypes := []string{
+		"Path",
+		"*Path",
+	}
+
 	if path == nil {
 		return &internalErr.TypeError{
-			Err: "Decoded path cannot be null",
+			Err:           "Decoded path cannot be null",
+			ExpectedTypes: expectedTypes,
+			GotType:       "null",
 		}
 	}
 
@@ -289,7 +333,9 @@ func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface
 		}
 	default:
 		return &internalErr.TypeError{
-			Err: "Input is not a path",
+			Err:           "Input is not a path",
+			ExpectedTypes: expectedTypes,
+			GotType:       fmt.Sprintf("%T", path),
 		}
 	}
 
