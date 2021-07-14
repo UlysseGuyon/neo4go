@@ -7,34 +7,36 @@ import (
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
 
-func convertInputObject(obj InputObject) interface{} {
+func convertInputObject(obj interface{}) interface{} {
 	if obj == nil {
 		return nil
+	}
+
+	if structObj, canConvert := obj.(InputStruct); canConvert {
+		rootMap := structObj.ConvertToMap()
+		interfaceMap := make(map[string]interface{})
+		for key, val := range rootMap {
+			interfaceMap[key] = convertInputObject(val)
+		}
+	}
+
+	if convertedPrimitive, canConvert := obj.(InputPrimitive); canConvert {
+		return convertedPrimitive.ConvertToPrimitive().PrimitiveConvert()
 	}
 
 	if primitive, canConvert := obj.(internalTypes.PrimitiveInputObject); canConvert {
 		return primitive.PrimitiveConvert()
 	}
 
-	rootMap := obj.Convert()
-	interfaceMap := make(map[string]interface{})
-	for key, val := range rootMap {
-		interfaceMap[key] = convertInputObject(val)
-	}
-
-	return interfaceMap
+	return nil
 }
 
 type inputArray struct {
-	Value []InputObject
+	Value []InputStruct
 }
 
-func NewInputArray(value []InputObject) InputObject {
+func NewInputArray(value []InputStruct) internalTypes.PrimitiveInputObject {
 	return &inputArray{Value: value}
-}
-
-func (val *inputArray) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputArray) PrimitiveConvert() interface{} {
@@ -48,14 +50,21 @@ func (val *inputArray) PrimitiveConvert() interface{} {
 }
 
 type inputMap struct {
-	Value map[string]InputObject
+	Value map[string]internalTypes.InputStruct
 }
 
-func NewInputMap(value map[string]InputObject) InputObject {
-	return &inputMap{Value: value}
+func NewInputMap(value map[string]InputStruct) internalTypes.InputStruct {
+	convertedValMap := make(map[string]internalTypes.InputStruct, len(value))
+
+	for key, val := range value {
+		convertedVal := val.(internalTypes.InputStruct)
+		convertedValMap[key] = convertedVal
+	}
+
+	return &inputMap{Value: convertedValMap}
 }
 
-func (val *inputMap) Convert() map[string]InputObject {
+func (val *inputMap) ConvertToMap() map[string]internalTypes.InputStruct {
 	return val.Value
 }
 
@@ -63,12 +72,8 @@ type inputInteger struct {
 	Value *int64
 }
 
-func NewInputInteger(value *int64) InputObject {
+func NewInputInteger(value *int64) internalTypes.PrimitiveInputObject {
 	return &inputInteger{Value: value}
-}
-
-func (val *inputInteger) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputInteger) PrimitiveConvert() interface{} {
@@ -79,12 +84,8 @@ type inputFloat struct {
 	Value *float64
 }
 
-func NewInputFloat(value *float64) InputObject {
+func NewInputFloat(value *float64) internalTypes.PrimitiveInputObject {
 	return &inputFloat{Value: value}
-}
-
-func (val *inputFloat) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputFloat) PrimitiveConvert() interface{} {
@@ -95,12 +96,8 @@ type inputBool struct {
 	Value *bool
 }
 
-func NewInputBool(value *bool) InputObject {
+func NewInputBool(value *bool) internalTypes.PrimitiveInputObject {
 	return &inputBool{Value: value}
-}
-
-func (val *inputBool) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputBool) PrimitiveConvert() interface{} {
@@ -111,12 +108,8 @@ type inputString struct {
 	Value *string
 }
 
-func NewInputString(value *string) InputObject {
+func NewInputString(value *string) internalTypes.PrimitiveInputObject {
 	return &inputString{Value: value}
-}
-
-func (val *inputString) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputString) PrimitiveConvert() interface{} {
@@ -127,12 +120,8 @@ type inputByteArray struct {
 	Value []byte
 }
 
-func NewInputByteArray(value []byte) InputObject {
+func NewInputByteArray(value []byte) internalTypes.PrimitiveInputObject {
 	return &inputByteArray{Value: value}
-}
-
-func (val *inputByteArray) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputByteArray) PrimitiveConvert() interface{} {
@@ -143,12 +132,8 @@ type inputDate struct {
 	Value *neo4j.Date
 }
 
-func NewInputDate(value *neo4j.Date) InputObject {
+func NewInputDate(value *neo4j.Date) internalTypes.PrimitiveInputObject {
 	return &inputDate{Value: value}
-}
-
-func (val *inputDate) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputDate) PrimitiveConvert() interface{} {
@@ -159,12 +144,8 @@ type inputTime struct {
 	Value *neo4j.OffsetTime
 }
 
-func NewInputTime(value *neo4j.OffsetTime) InputObject {
+func NewInputTime(value *neo4j.OffsetTime) internalTypes.PrimitiveInputObject {
 	return &inputTime{Value: value}
-}
-
-func (val *inputTime) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputTime) PrimitiveConvert() interface{} {
@@ -175,12 +156,8 @@ type inputLocalTime struct {
 	Value *neo4j.LocalTime
 }
 
-func NewInputLocalTime(value *neo4j.LocalTime) InputObject {
+func NewInputLocalTime(value *neo4j.LocalTime) internalTypes.PrimitiveInputObject {
 	return &inputLocalTime{Value: value}
-}
-
-func (val *inputLocalTime) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputLocalTime) PrimitiveConvert() interface{} {
@@ -191,12 +168,8 @@ type inputDateTime struct {
 	Value *time.Time
 }
 
-func NewInputDateTime(value *time.Time) InputObject {
+func NewInputDateTime(value *time.Time) internalTypes.PrimitiveInputObject {
 	return &inputDateTime{Value: value}
-}
-
-func (val *inputDateTime) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputDateTime) PrimitiveConvert() interface{} {
@@ -207,12 +180,8 @@ type inputLocalDateTime struct {
 	Value *neo4j.LocalDateTime
 }
 
-func NewInputLocalDateTime(value *neo4j.LocalDateTime) InputObject {
+func NewInputLocalDateTime(value *neo4j.LocalDateTime) internalTypes.PrimitiveInputObject {
 	return &inputLocalDateTime{Value: value}
-}
-
-func (val *inputLocalDateTime) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputLocalDateTime) PrimitiveConvert() interface{} {
@@ -223,12 +192,8 @@ type inputDuration struct {
 	Value *neo4j.Duration
 }
 
-func NewInputDuration(value *neo4j.Duration) InputObject {
+func NewInputDuration(value *neo4j.Duration) internalTypes.PrimitiveInputObject {
 	return &inputDuration{Value: value}
-}
-
-func (val *inputDuration) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputDuration) PrimitiveConvert() interface{} {
@@ -239,12 +204,8 @@ type inputPoint struct {
 	Value *neo4j.Point
 }
 
-func NewInputPoint(value *neo4j.Point) InputObject {
+func NewInputPoint(value *neo4j.Point) internalTypes.PrimitiveInputObject {
 	return &inputPoint{Value: value}
-}
-
-func (val *inputPoint) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputPoint) PrimitiveConvert() interface{} {
@@ -255,12 +216,8 @@ type inputNode struct {
 	Value neo4j.Node
 }
 
-func NewInputNode(value neo4j.Node) InputObject {
+func NewInputNode(value neo4j.Node) internalTypes.PrimitiveInputObject {
 	return &inputNode{Value: value}
-}
-
-func (val *inputNode) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputNode) PrimitiveConvert() interface{} {
@@ -271,12 +228,8 @@ type inputRelationship struct {
 	Value neo4j.Relationship
 }
 
-func NewInputRelationship(value neo4j.Relationship) InputObject {
+func NewInputRelationship(value neo4j.Relationship) internalTypes.PrimitiveInputObject {
 	return &inputRelationship{Value: value}
-}
-
-func (val *inputRelationship) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputRelationship) PrimitiveConvert() interface{} {
@@ -287,12 +240,8 @@ type inputPath struct {
 	Value neo4j.Path
 }
 
-func NewInputPath(value neo4j.Path) InputObject {
+func NewInputPath(value neo4j.Path) internalTypes.PrimitiveInputObject {
 	return &inputPath{Value: value}
-}
-
-func (val *inputPath) Convert() map[string]InputObject {
-	return nil
 }
 
 func (val *inputPath) PrimitiveConvert() interface{} {

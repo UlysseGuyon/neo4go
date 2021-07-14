@@ -116,7 +116,7 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 
 func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryResult, internalErr.Neo4GoError) {
 	transactionWork := func(tx neo4j.Transaction) (interface{}, error) {
-		var nextQueryParams map[string]InputObject = nil
+		var nextQueryParams map[string]InputStruct = nil
 		var lastResult QueryResult
 		for _, transactionParams := range transactionGlobalParams.TransactionSteps {
 			usedParamsMap := transactionParams.Params

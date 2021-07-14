@@ -4,20 +4,23 @@ import (
 	"time"
 
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
+	internalTypes "github.com/UlysseGuyon/neo4go/internal/types"
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
 
+type ManagerOptions internalTypes.ManagerOptions
+
 type QueryParams struct {
 	Query       string
-	Params      map[string]InputObject
+	Params      map[string]InputStruct
 	Configurers []func(*neo4j.TransactionConfig)
 	Bookmarks   []string
 }
 
 type TransactionStepParams struct {
 	Query          string
-	Params         map[string]InputObject
-	TransitionFunc func(QueryResult) map[string]InputObject
+	Params         map[string]InputStruct
+	TransitionFunc func(QueryResult) map[string]InputStruct
 }
 
 type TransactionParams struct {
@@ -66,6 +69,8 @@ type Manager interface {
 	Transaction(TransactionParams) (QueryResult, internalErr.Neo4GoError)
 }
 
-type InputObject interface {
-	Convert() map[string]InputObject
+type InputStruct internalTypes.InputStruct
+
+type InputPrimitive interface {
+	ConvertToPrimitive() internalTypes.PrimitiveInputObject
 }
