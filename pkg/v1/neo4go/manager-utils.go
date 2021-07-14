@@ -4,10 +4,9 @@ import (
 	"strings"
 
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
-	internalTypes "github.com/UlysseGuyon/neo4go/internal/types"
 )
 
-func ValidateManagerOptions(opt internalTypes.ManagerOptions) internalErr.Neo4GoError {
+func validateManagerOptions(opt ManagerOptions) internalErr.Neo4GoError {
 	if opt.URI == "" {
 		return &internalErr.InitError{
 			Err:    "Database URI given in options is empty",
@@ -27,11 +26,11 @@ func ValidateManagerOptions(opt internalTypes.ManagerOptions) internalErr.Neo4Go
 	return nil
 }
 
-func SetManagerOptionsDefaultValues(opt internalTypes.ManagerOptions) internalTypes.ManagerOptions {
+func setManagerOptionsDefaultValues(opt ManagerOptions) ManagerOptions {
 	return opt
 }
 
-func IsWriteQuery(query string) bool {
+func isWriteQuery(query string) bool {
 	isWrite := false
 
 	allWriteClauses := []string{

@@ -1,9 +1,43 @@
 package neo4go
 
 import (
+	"time"
+
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
+
+type RecordMap struct {
+	Arrays    map[string][]interface{}
+	MapArrays map[string][]RecordMap
+	Maps      map[string]RecordMap
+	Strings   map[string]string
+	Ints      map[string]int64
+	Floats    map[string]float64
+	Bools     map[string]bool
+	Times     map[string]time.Time
+	Nodes     map[string]neo4j.Node
+	Relations map[string]neo4j.Relationship
+	Paths     map[string]neo4j.Path
+	Others    map[string]interface{}
+}
+
+func newEmptyRecordMap() RecordMap {
+	return RecordMap{
+		Arrays:    make(map[string][]interface{}),
+		MapArrays: make(map[string][]RecordMap),
+		Maps:      make(map[string]RecordMap),
+		Strings:   make(map[string]string),
+		Ints:      make(map[string]int64),
+		Floats:    make(map[string]float64),
+		Bools:     make(map[string]bool),
+		Times:     make(map[string]time.Time),
+		Nodes:     make(map[string]neo4j.Node),
+		Relations: make(map[string]neo4j.Relationship),
+		Paths:     make(map[string]neo4j.Path),
+		Others:    make(map[string]interface{}),
+	}
+}
 
 type QueryResult interface {
 	// Keys returns the keys available on the result set.

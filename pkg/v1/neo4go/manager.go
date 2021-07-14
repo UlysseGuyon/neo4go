@@ -4,13 +4,48 @@ import (
 	"fmt"
 
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
-	internalMain "github.com/UlysseGuyon/neo4go/internal/neo4go"
-	internalTypes "github.com/UlysseGuyon/neo4go/internal/types"
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
 
+type Manager interface {
+	Init(ManagerOptions) internalErr.Neo4GoError
+	IsConnected() bool
+	Close() internalErr.Neo4GoError
+	Query(QueryParams) (QueryResult, internalErr.Neo4GoError)
+	Transaction(TransactionParams) (QueryResult, internalErr.Neo4GoError)
+}
+
+type ManagerOptions struct {
+	URI          string
+	DatabaseName string
+	Realm        string
+	Username     string
+	Password     string
+	CustomAuth   *neo4j.AuthToken
+	Configurers  []func(*neo4j.Config)
+}
+
+type QueryParams struct {
+	Query       string
+	Params      map[string]InputStruct
+	Configurers []func(*neo4j.TransactionConfig)
+	Bookmarks   []string
+}
+
+type TransactionStepParams struct {
+	Query          string
+	Params         map[string]InputStruct
+	TransitionFunc func(QueryResult) map[string]InputStruct
+}
+
+type TransactionParams struct {
+	TransactionSteps []TransactionStepParams
+	Configurers      []func(*neo4j.TransactionConfig)
+	Bookmarks        []string
+}
+
 type manager struct {
-	options *internalTypes.ManagerOptions
+	options *ManagerOptions
 	driver  *neo4j.Driver
 }
 
@@ -34,11 +69,11 @@ func NewManager(options ManagerOptions) (Manager, internalErr.Neo4GoError) {
 }
 
 func (m *manager) Init(options ManagerOptions) internalErr.Neo4GoError {
-	optErr := internalMain.ValidateManagerOptions(internalTypes.ManagerOptions(options))
+	optErr := validateManagerOptions(options)
 	if optErr != nil {
 		return optErr
 	}
-	usedOptions := internalMain.SetManagerOptionsDefaultValues(internalTypes.ManagerOptions(options))
+	usedOptions := setManagerOptionsDefaultValues(options)
 
 	usedAuth := neo4j.NoAuth()
 	if usedOptions.CustomAuth != nil {
@@ -88,7 +123,7 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 		paramsMap[key] = convertInputObject(value)
 	}
 
-	isWrite := internalMain.IsWriteQuery(queryParams.Query)
+	isWrite := isWriteQuery(queryParams.Query)
 
 	usedSessionMode := neo4j.AccessModeRead
 	if isWrite {
@@ -155,7 +190,7 @@ func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryR
 
 	isWrite := false
 	for _, transactionParams := range transactionGlobalParams.TransactionSteps {
-		if internalMain.IsWriteQuery(transactionParams.Query) {
+		if isWriteQuery(transactionParams.Query) {
 			isWrite = true
 		}
 	}
