@@ -8,21 +8,21 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-func TestNewNeo4GoDecoder(t *testing.T) {
+func TestDecoder(t *testing.T) {
 	type args struct {
-		options mapstructure.DecoderConfig
+		options *mapstructure.DecoderConfig
 	}
 	tests := []struct {
 		name string
 		args args
-		want Neo4GoDecoder
+		want Decoder
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewNeo4GoDecoder(tt.args.options); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewNeo4GoDecoder() = %v, want %v", got, tt.want)
+			if got := NewDecoder(tt.args.options); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewDecoder() = %v, want %v", got, tt.want)
 			}
 		})
 	}
