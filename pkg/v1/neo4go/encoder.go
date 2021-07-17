@@ -1,6 +1,7 @@
 package neo4go
 
 import (
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -19,6 +20,7 @@ type EncodeHookFunc func(reflect.Value, interface{}) (InputStruct, bool)
 type Neo4GoEncoderOptions struct {
 	TagName    string
 	EncodeHook EncodeHookFunc
+	Silent     bool
 }
 
 type neo4goEncoder struct {
@@ -60,6 +62,10 @@ func (encoder *neo4goEncoder) Encode(obj interface{}) InputStruct {
 
 	if encodedObj, canEncode := encoder.Options.EncodeHook(objValue, obj); canEncode {
 		return encodedObj
+	}
+
+	if !encoder.Options.Silent {
+		log.Printf("Could not encode object : (Type : %s) %+v\n", objValue.Type().String(), obj)
 	}
 
 	return nil

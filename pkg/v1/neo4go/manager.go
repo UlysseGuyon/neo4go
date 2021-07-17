@@ -225,9 +225,6 @@ func (m *manager) Transaction(transactionGlobalParams TransactionParams) (QueryR
 	}
 
 	if transactionErr != nil {
-		if convertedErr, canConvert := transactionErr.(internalErr.Neo4GoError); canConvert {
-			return nil, convertedErr
-		}
 		return nil, internalErr.ToDriverError(transactionErr)
 	}
 
