@@ -4,17 +4,10 @@ import (
 	"log"
 
 	"github.com/UlysseGuyon/neo4go/pkg/v1/neo4go"
-	"github.com/mitchellh/mapstructure"
 )
 
 type User struct {
 	Name string `neo4j:"name"`
-}
-
-func (u *User) ConvertToMap() map[string]neo4go.InputStruct {
-	return map[string]neo4go.InputStruct{
-		"name": neo4go.NewInputString(&u.Name),
-	}
 }
 
 func main() {
@@ -31,10 +24,14 @@ func main() {
 	}
 	defer manager.Close()
 
+	encoder := neo4go.NewNeo4GoEncoder(nil)
+
+	userAlice := User{Name: "Alice"}
+
 	queryOpt := neo4go.QueryParams{
 		Query: "WITH $newUser AS newU CREATE (u:User {name: newU.name}) RETURN u",
 		Params: map[string]neo4go.InputStruct{
-			"newUser": &User{Name: "Alice"},
+			"newUser": encoder.Encode(userAlice),
 		},
 	}
 	record, err := neo4go.Single(manager.Query(queryOpt))
@@ -46,11 +43,11 @@ func main() {
 	if !exists {
 		log.Fatalln("u is null or not a node !")
 	}
-	user := User{}
-	err = neo4go.NewNeo4GoDecoder(mapstructure.DecoderConfig{}).DecodeNode(userNode, &user)
+	userRetreived := User{}
+	err = neo4go.NewNeo4GoDecoder(nil).DecodeNode(userNode, &userRetreived)
 	if err != nil {
 		log.Fatalln(err.FmtError())
 	}
 
-	log.Printf("Saved user : %+v !", user)
+	log.Printf("Saved user : %+v !", userRetreived)
 }

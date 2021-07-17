@@ -20,13 +20,18 @@ type neo4goDecoder struct {
 	DecoderOptions mapstructure.DecoderConfig
 }
 
-func NewNeo4GoDecoder(options mapstructure.DecoderConfig) Neo4GoDecoder {
-	if options.TagName == "" {
-		options.TagName = internalMain.DefaultDecodingTagName
+func NewNeo4GoDecoder(options *mapstructure.DecoderConfig) Neo4GoDecoder {
+	usedOpt := mapstructure.DecoderConfig{}
+	if options != nil {
+		usedOpt = *options
+	}
+
+	if usedOpt.TagName == "" {
+		usedOpt.TagName = internalMain.DefaultDecodingTagName
 	}
 
 	newNeo4GoDecoder := neo4goDecoder{
-		DecoderOptions: options,
+		DecoderOptions: usedOpt,
 	}
 
 	return &newNeo4GoDecoder

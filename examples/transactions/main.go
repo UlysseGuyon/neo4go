@@ -5,17 +5,11 @@ import (
 	"log"
 
 	"github.com/UlysseGuyon/neo4go/pkg/v1/neo4go"
-	"github.com/mitchellh/mapstructure"
 )
 
 type User struct {
+	Id   string `neo4j:"id"`
 	Name string `neo4j:"name"`
-}
-
-func (u *User) ConvertToMap() map[string]neo4go.InputStruct {
-	return map[string]neo4go.InputStruct{
-		"name": neo4go.NewInputString(&u.Name),
-	}
 }
 
 func main() {
@@ -32,14 +26,17 @@ func main() {
 	}
 	defer manager.Close()
 
-	decoder := neo4go.NewNeo4GoDecoder(mapstructure.DecoderConfig{})
+	encoder := neo4go.NewNeo4GoEncoder(nil)
+	decoder := neo4go.NewNeo4GoDecoder(nil)
+
+	userAlice := User{Name: "Alice"}
 
 	transactionParams := neo4go.TransactionParams{
 		TransactionSteps: []neo4go.TransactionStepParams{
 			{
 				Query: "WITH $newUser AS newU CREATE (u:User {name: newU.name}) RETURN u",
 				Params: map[string]neo4go.InputStruct{
-					"newUser": &User{Name: "Alice"},
+					"newUser": encoder.Encode(userAlice),
 				},
 				TransitionFunc: func(qr neo4go.QueryResult) (map[string]neo4go.InputStruct, error) {
 					record, err := neo4go.Single(qr, nil)

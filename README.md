@@ -31,39 +31,23 @@ manager, err := neo4go.NewManager(options)
 defer manager.Close()
 ```
 
-Then, for each type that you want to pass as a neo4j query parameter, you first have to implement the following method.
-```go
-// The return value is a mapping of each field name/value if you type is a struct.
-ConvertToMap() map[string]InputStruct
-```
-If you are using a type that cannot be mapped (like an array), your `ConvertToMap` method should return nil and you should also implement the following method.
-```go
-// You can either return a struct or a primitive value.
-ConvertToInputObject() InputStruct
-```
-For each primitive type that can be found in neo4j, you can instanciate the equivalent as a neo4go `InputStruct` with provided functions such as `NewInputInteger`, `NewInputString`, `NewInputArray`, etc.
+Then, you can use the `Neo4GoEncoder` interface in order to convert your object as an input accepted by the neo4j-go-driver. When adding a specific tag (`neo4j` by default) to an exported struct field, you allow the encoder to find it and map it in the resulting object. All embeded value (in a field, a map or an array) that cannot be converted will be set to `nil` in the result object.
 
-Then, you can call any query you want with these parameters.
 ```go
 // The struct we use as a neo4j node
 type User struct {
-    Name string
+    Name string `neo4j:"name"` // Here we add the `neo4j` tag to allow encoding
 }
 
-// Implementation of ConvertToMap in order to convert `User` as an `InputStruct`
-func (u *User) ConvertToMap() map[string]neo4go.InputStruct {
-    return map[string]neo4go.InputStruct{
-        "name": neo4go.NewInputString(&u.Name),
-    }
-}
+userAlice := User{Name: "Alice"}
 
 queryOpt := neo4go.QueryParams{
-	Query: "WITH $newUser AS newU CREATE (u:User {name: newU.name})",
-	Params: map[string]neo4go.InputStruct{
-        "newUser": &User{Name: "Alice"},
+    Query: "WITH $newUser AS newU CREATE (u:User {name: newU.name}) RETURN u",
+    Params: map[string]neo4go.InputStruct{
+        "newUser": neo4go.NewNeo4GoEncoder(nil).Encode(userAlice),
     },
 }
-res, err := manager.Query(queryOpt)
+record, err := neo4go.Single(manager.Query(queryOpt))
 ```
 
 The result of a query is a list of maps, each containing typed objects. For example, if the result of your query is `RETURN 'abc' AS str`, then you should be able to access `str` through the following process.
@@ -76,27 +60,32 @@ if !exists {
     fmt.Println("'str' is either null or not a string at the end of the query !")
 }
 ```
-Nodes cannot be decoded directly in the result as the object type you want but you can still decode them easily thanks to the `DecodeNode` function. By adding the tag `neo4j` (or any other tag that you specify in the decoder options) for each node field that you want to map, you only to pass an empty object and it will be filled automatically.
+
+Nodes cannot be decoded directly in the result as the object type you want but you can still decode them easily thanks to the `Neo4GoDecoder` iterface. By adding the tag `neo4j` (or any other tag that you specify in the decoder options) for each node field that you want to map, you only need to pass an empty object and it will be filled automatically.
+
 ```go
 type User struct {
-	Name string `neo4j:"name"` // Here we added the `neo4j` tag
+	Name string `neo4j:"name"` // Here we added the `neo4j` tag to allow decoding
 }
 
 ...
 
-record, _ := neo4go.Single(manager.Query(neo4go.QueryParams{Query: "... RETURN user"})) // user is a node
-
-userNode, exists := record.Nodes["user"]
-if !exists {
-    fmt.Println("user is null or not a node !")
-}
-user := User{}
-err = neo4go.NewNeo4GoDecoder(mapstructure.DecoderConfig{}).DecodeNode(userNode, &user) // you should give a pointer so that it can be modified
+record, err := neo4go.Single(manager.Query("... RETURN u"))
 if err != nil {
     log.Fatalln(err.FmtError())
 }
 
-log.Printf("User : %+v", user)
+userNode, exists := record.Nodes["u"]
+if !exists {
+    log.Fatalln("u is null or not a node !")
+}
+userRetreived := User{}
+err = neo4go.NewNeo4GoDecoder(nil).DecodeNode(userNode, &userRetreived)
+if err != nil {
+    log.Fatalln(err.FmtError())
+}
+
+log.Printf("Saved user : %+v !", userRetreived)
 ```
 
 ## Licence
