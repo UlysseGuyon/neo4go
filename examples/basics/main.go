@@ -11,6 +11,7 @@ type User struct {
 }
 
 func main() {
+	// Instanciate the manager
 	options := neo4go.ManagerOptions{
 		URI:          "<YOUR_DATABASE_URI>",
 		DatabaseName: "<YOUR_DATABASE_NAME>",
@@ -24,7 +25,8 @@ func main() {
 	}
 	defer manager.Close()
 
-	encoder := neo4go.NewNeo4GoEncoder(nil)
+	// Create the query from encoded values
+	encoder := neo4go.NewEncoder(nil)
 
 	userAlice := User{Name: "Alice"}
 
@@ -34,17 +36,20 @@ func main() {
 			"newUser": encoder.Encode(userAlice),
 		},
 	}
+
+	// Run the query
 	record, err := neo4go.Single(manager.Query(queryOpt))
 	if err != nil {
 		log.Fatalln(err.FmtError())
 	}
 
+	// Decode the results from the query
 	userNode, exists := record.Nodes["u"]
 	if !exists {
 		log.Fatalln("u is null or not a node !")
 	}
 	userRetreived := User{}
-	err = neo4go.NewNeo4GoDecoder(nil).DecodeNode(userNode, &userRetreived)
+	err = neo4go.NewDecoder(nil).DecodeNode(userNode, &userRetreived)
 	if err != nil {
 		log.Fatalln(err.FmtError())
 	}
