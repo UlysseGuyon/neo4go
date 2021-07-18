@@ -11,13 +11,19 @@ type Manager interface {
 	// IsConnected tells if the driver could effectively connect to the database
 	IsConnected() bool
 
-	// Query allows a single query transaction to be made in database
+	// Query allows a single query to be made in database, possibly through an existing transaction
 	Query(QueryParams) (QueryResult, internalErr.Neo4GoError)
 
+	// BeginTransaction starts a new transaction and stores it under the returned ID
 	BeginTransaction(TransactionParams) (string, internalErr.Neo4GoError)
+
+	// Commit commits the transaction that has the given ID
 	Commit(string) internalErr.Neo4GoError
+
+	// Rollback rolls back the transaction that has the given ID
 	Rollback(string) internalErr.Neo4GoError
 
+	// LastBookmark returns the bookmark obtained by the session that ran the last query
 	LastBookmark() string
 
 	// Close closes the driver
@@ -62,22 +68,31 @@ type QueryParams struct {
 	// The bookmarks of previous sessions to apply to the query
 	Bookmarks []string
 
+	// The transaction ID to use for the query
 	Transaction string
 
+	// Whether to commit the transaction (if there is one for this query) after the successfull execution of the query
 	CommitOnSuccess bool
 }
 
+// TransactionParams represents all the configuration of a single transaction at its creation
 type TransactionParams struct {
+	// Tells if the transaction type is read or write
 	IsWrite bool
 
+	// The bookmarks of previous sessions to apply to the query
 	Bookmarks []string
 
+	// The configurers to apply to the transaction
 	Configurers []func(*neo4j.TransactionConfig)
 }
 
+// transactionSession represents a session and a transaction that are stored until the transaction is ended
 type transactionSession struct {
+	// The transaction that has been started
 	transaction neo4j.Transaction
 
+	// The session that started the transaction
 	session neo4j.Session
 }
 
@@ -89,8 +104,10 @@ type manager struct {
 	// The neo4j-go-driver wrapped in this manager
 	driver *neo4j.Driver
 
+	// The bookmark obtained by the session that ran the last query
 	lastBookmark string
 
+	// The map of transactions currently running, with their IDs as keys
 	transactionSessions map[string]transactionSession
 }
 
@@ -184,7 +201,7 @@ func (m *manager) Close() internalErr.Neo4GoError {
 	return nil
 }
 
-// Query allows a single query transaction to be made in database
+// Query allows a single query to be made in database, possibly through an existing transaction
 func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4GoError) {
 	// First, we convert all the input objects as interface maps
 	paramsMap := make(map[string]interface{})
@@ -192,6 +209,7 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 		paramsMap[key] = convertInputObject(value)
 	}
 
+	// Search an existing transaction with the given ID
 	txSession, useTransaction := m.transactionSessions[queryParams.Transaction]
 	if !useTransaction && queryParams.Transaction != "" {
 		return nil, &internalErr.TransactionError{
@@ -203,6 +221,7 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 	var err error
 	var usedSession neo4j.Session
 	if useTransaction {
+		// If the transaction exists, then just run the query with it
 		usedSession = txSession.session
 
 		rawResult, err = txSession.transaction.Run(queryParams.Query, paramsMap)
@@ -217,6 +236,8 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 			}
 		}
 	} else {
+		// If the transaction does not exist, run the query as auto-commit transaction from a new session
+
 		// Determine if the query is read or write and set the access mode depending on it
 		isWrite := IsWriteQuery(queryParams.Query)
 
@@ -251,7 +272,16 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 	return convertedResult, nil
 }
 
+// BeginTransaction starts a new transaction and stores it under the returned ID
 func (m *manager) BeginTransaction(params TransactionParams) (string, internalErr.Neo4GoError) {
+	newTxUUID, err := uuid.NewV4()
+	if err != nil {
+		return "", &internalErr.TransactionError{
+			Err: err.Error(),
+		}
+	}
+
+	// First, init the session that will run the transaction
 	usedSessionMode := neo4j.AccessModeRead
 	if params.IsWrite {
 		usedSessionMode = neo4j.AccessModeWrite
@@ -266,17 +296,17 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, internalEr
 		return "", internalErr.ToDriverError(err)
 	}
 
+	// Then begin the transaction
 	tx, err := session.BeginTransaction(params.Configurers...)
 	if err != nil {
+		closeErr := session.Close()
+		if closeErr != nil {
+			return "", internalErr.ToDriverError(closeErr)
+		}
 		return "", internalErr.ToDriverError(err)
 	}
 
-	newTxUUID, err := uuid.NewV4()
-	if err != nil {
-		return "", &internalErr.TransactionError{
-			Err: err.Error(),
-		}
-	}
+	// Finally, store the transaction and its session to the manager's map
 	newTxID := newTxUUID.String()
 
 	m.transactionSessions[newTxID] = transactionSession{
@@ -286,7 +316,10 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, internalEr
 
 	return newTxID, nil
 }
+
+// Commit commits the transaction that has the given ID
 func (m *manager) Commit(txID string) internalErr.Neo4GoError {
+	// Get the transaction and its session from ID
 	txSession, exists := m.transactionSessions[txID]
 	if !exists {
 		return &internalErr.TransactionError{
@@ -294,6 +327,7 @@ func (m *manager) Commit(txID string) internalErr.Neo4GoError {
 		}
 	}
 
+	// Commit the transaction and close its session
 	err := txSession.transaction.Commit()
 	if err != nil {
 		return internalErr.ToDriverError(err)
@@ -303,11 +337,15 @@ func (m *manager) Commit(txID string) internalErr.Neo4GoError {
 		return internalErr.ToDriverError(err)
 	}
 
+	// Remove the transaction from the manager store
 	delete(m.transactionSessions, txID)
 
 	return nil
 }
+
+// Rollback rolls back the transaction that has the given ID
 func (m *manager) Rollback(txID string) internalErr.Neo4GoError {
+	// Get the transaction and its session from ID
 	txSession, exists := m.transactionSessions[txID]
 	if !exists {
 		return &internalErr.TransactionError{
@@ -315,6 +353,7 @@ func (m *manager) Rollback(txID string) internalErr.Neo4GoError {
 		}
 	}
 
+	// Commit the transaction and close its session
 	err := txSession.transaction.Rollback()
 	if err != nil {
 		return internalErr.ToDriverError(err)
@@ -324,11 +363,13 @@ func (m *manager) Rollback(txID string) internalErr.Neo4GoError {
 		return internalErr.ToDriverError(err)
 	}
 
+	// Remove the transaction from the manager store
 	delete(m.transactionSessions, txID)
 
 	return nil
 }
 
+// LastBookmark returns the bookmark obtained by the session that ran the last query
 func (m *manager) LastBookmark() string {
 	return m.lastBookmark
 }

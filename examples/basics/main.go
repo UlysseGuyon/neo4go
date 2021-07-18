@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/UlysseGuyon/neo4go/pkg/v1/neo4go"
-	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
 
 type User struct {
@@ -14,15 +13,10 @@ type User struct {
 func main() {
 	// Instanciate the manager
 	options := neo4go.ManagerOptions{
-		URI:          "bolt://localhost",
-		DatabaseName: "neo4j",
-		Username:     "neo4j",
-		Password:     "nPe4os45jWG0oroDdFloow",
-		Configurers: []func(*neo4j.Config){
-			func(c *neo4j.Config) {
-				c.Encrypted = false
-			},
-		},
+		URI:          "<YOUR_DATABASE_URI>",
+		DatabaseName: "<YOUR_DATABASE_NAME>",
+		Username:     "<YOUR_USERNAME>",
+		Password:     "<YOUR_PASSWORD>",
 	}
 
 	manager, err := neo4go.NewManager(options)

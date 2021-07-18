@@ -344,6 +344,8 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 	return nil
 }
 
+// DecodePath takes a path like object (pointers are accepted) and decodes it
+// in the second argument for the nodes and in the third argument for the relationships
 func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface{}, outputRelationships interface{}) internalErr.Neo4GoError {
 	expectedTypes := []string{
 		"Path",

@@ -35,6 +35,7 @@ type EncoderOptions struct {
 
 // neo4goEncoder is the default implementation of the Encoder interface
 type neo4goEncoder struct {
+	// The configuration of this encoder
 	options EncoderOptions
 }
 
