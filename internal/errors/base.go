@@ -12,11 +12,12 @@ type Neo4GoError interface {
 
 // The strings representing each type of neo4go native error
 const (
-	InitErrorTypeName     = "Init"
-	TypeErrorTypeName     = "Type"
-	DecodingErrorTypeName = "Decoding"
-	QueryErrorTypeName    = "Query"
-	UnknownErrorTypeName  = "Unknown"
+	InitErrorTypeName        = "Init"
+	TypeErrorTypeName        = "Type"
+	DecodingErrorTypeName    = "Decoding"
+	QueryErrorTypeName       = "Query"
+	TransactionErrorTypeName = "Transaction"
+	UnknownErrorTypeName     = "Unknown"
 )
 
 /* ----- INIT ERROR ----- */
@@ -86,7 +87,7 @@ func (err *DecodingError) FmtError() string {
 
 /* ----- QUERY ERROR ----- */
 
-// QueryError represents an error occurring durring the execution of a Neo4J query
+// QueryError represents an error occurring durring the execution of a Neo4J query and that is not an error from neo4j-go-driver
 type QueryError struct {
 	Err string
 }
@@ -99,6 +100,24 @@ func (err *QueryError) Error() string {
 // FmtError returns the formatted error string
 func (err *QueryError) FmtError() string {
 	return errorFmt("Query", err.Error())
+}
+
+/* ----- TRANSACTION ERROR ----- */
+
+// TransactionError represents an error occurring during a transaction and that is not an error from neo4j-go-driver
+type TransactionError struct {
+	// The basic error string
+	Err string
+}
+
+// Error returns the raw error string
+func (err *TransactionError) Error() string {
+	return err.Err
+}
+
+// FmtError returns the formatted error string
+func (err *TransactionError) FmtError() string {
+	return errorFmt(TransactionErrorTypeName, err.Error())
 }
 
 /* ----- UNKOWN ERROR ----- */

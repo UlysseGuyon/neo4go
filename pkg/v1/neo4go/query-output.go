@@ -8,44 +8,233 @@ import (
 )
 
 // RecordMap contains all the typed objects retrieved from a neo4j query result.
-// Each object is in it typed map under the key attributed to it inside the cypher query
+// Each object is in its typed map under the key attributed to it inside the cypher query
 type RecordMap struct {
-	Arrays             map[string][]interface{}
-	MapArrays          map[string][]RecordMap
-	NodeArrays         map[string][]neo4j.Node
-	RelationshipArrays map[string][]neo4j.Relationship
-	PathArrays         map[string][]neo4j.Path
-	Maps               map[string]RecordMap
-	Strings            map[string]string
-	Ints               map[string]int64
-	Floats             map[string]float64
-	Bools              map[string]bool
-	Times              map[string]time.Time
-	Nodes              map[string]neo4j.Node
-	Relations          map[string]neo4j.Relationship
-	Paths              map[string]neo4j.Path
-	Others             map[string]interface{}
+	Arrays    map[string]RecordArray
+	Maps      map[string]RecordMap
+	Strings   map[string]string
+	Ints      map[string]int64
+	Floats    map[string]float64
+	Bools     map[string]bool
+	Times     map[string]time.Time
+	Nodes     map[string]neo4j.Node
+	Relations map[string]neo4j.Relationship
+	Paths     map[string]neo4j.Path
+	Others    map[string]interface{}
 }
 
 // newEmptyRecordMap returns a new RecordMap with each field initialized as an empty map
 func newEmptyRecordMap() RecordMap {
 	return RecordMap{
-		Arrays:             make(map[string][]interface{}),
-		MapArrays:          make(map[string][]RecordMap),
-		NodeArrays:         make(map[string][]neo4j.Node),
-		RelationshipArrays: make(map[string][]neo4j.Relationship),
-		PathArrays:         make(map[string][]neo4j.Path),
-		Maps:               make(map[string]RecordMap),
-		Strings:            make(map[string]string),
-		Ints:               make(map[string]int64),
-		Floats:             make(map[string]float64),
-		Bools:              make(map[string]bool),
-		Times:              make(map[string]time.Time),
-		Nodes:              make(map[string]neo4j.Node),
-		Relations:          make(map[string]neo4j.Relationship),
-		Paths:              make(map[string]neo4j.Path),
-		Others:             make(map[string]interface{}),
+		Arrays:    make(map[string]RecordArray),
+		Maps:      make(map[string]RecordMap),
+		Strings:   make(map[string]string),
+		Ints:      make(map[string]int64),
+		Floats:    make(map[string]float64),
+		Bools:     make(map[string]bool),
+		Times:     make(map[string]time.Time),
+		Nodes:     make(map[string]neo4j.Node),
+		Relations: make(map[string]neo4j.Relationship),
+		Paths:     make(map[string]neo4j.Path),
+		Others:    make(map[string]interface{}),
 	}
+}
+
+// RecordMap contains all the typed objects retrieved from a neo4j array in a result.
+// The items in the array can be iterated through via the Next function and retrieved as typed objects via the good function
+type RecordArray interface {
+	// Next iterates to the next item of the array and return false if there are no more items
+	Next() bool
+
+	// CurrentAsArray returns the current item of the iteration typed as an Array.
+	// The second result is false if the current item cannot be converted as an Array.
+	CurrentAsArray() (RecordArray, bool)
+
+	// CurrentAsMap returns the current item of the iteration typed as a Map.
+	// The second result is false if the current item cannot be converted as a Map.
+	CurrentAsMap() (*RecordMap, bool)
+
+	// CurrentAsString returns the current item of the iteration typed as a String.
+	// The second result is false if the current item cannot be converted as a String.
+	CurrentAsString() (*string, bool)
+
+	// CurrentAsInt returns the current item of the iteration typed as an Int.
+	// The second result is false if the current item cannot be converted as an Int.
+	CurrentAsInt() (*int64, bool)
+
+	// CurrentAsFloat returns the current item of the iteration typed as a Float.
+	// The second result is false if the current item cannot be converted as a Float.
+	CurrentAsFloat() (*float64, bool)
+
+	// CurrentAsBool returns the current item of the iteration typed as a Bool.
+	// The second result is false if the current item cannot be converted as a Bool.
+	CurrentAsBool() (*bool, bool)
+
+	// CurrentAsTime returns the current item of the iteration typed as a Time.
+	// The second result is false if the current item cannot be converted as a Time.
+	CurrentAsTime() (*time.Time, bool)
+
+	// CurrentAsNode returns the current item of the iteration typed as a Node.
+	// The second result is false if the current item cannot be converted as a Node.
+	CurrentAsNode() (neo4j.Node, bool)
+
+	// CurrentAsRelation returns the current item of the iteration typed as a Relation.
+	// The second result is false if the current item cannot be converted as a Relation.
+	CurrentAsRelation() (neo4j.Relationship, bool)
+
+	// CurrentAsPath returns the current item of the iteration typed as a Path.
+	// The second result is false if the current item cannot be converted as a Path.
+	CurrentAsPath() (neo4j.Path, bool)
+
+	// CurrentAsInterface returns the current item of the iteration typed as an untyped Interface.
+	CurrentAsInterface() interface{}
+}
+
+// recordArray is the default implementation of RecordArray
+type recordArray struct {
+	// The array of untyped objects
+	rawArray []interface{}
+
+	// The current index of the iteration in the rawArray
+	currentIndex int
+
+	// Tells if the Next function was called at least once on this array
+	firstNext bool
+}
+
+// NewRecordArray creates a new instance of RecordArray, with a given interface array.
+func NewRecordArray(rawArray []interface{}) RecordArray {
+	return &recordArray{rawArray: rawArray, currentIndex: 0, firstNext: true}
+}
+
+// getCurrent returns the item currently pointed to in the array, or nil if the index is out of bounds
+func (rec *recordArray) getCurrent() interface{} {
+	if rec.currentIndex < 0 || rec.currentIndex >= len(rec.rawArray) {
+		return nil
+	} else {
+		return rec.rawArray[rec.currentIndex]
+	}
+}
+
+// Next iterates to the next item of the array and return false if there are no more items
+func (rec *recordArray) Next() bool {
+	if rec.currentIndex+1 >= len(rec.rawArray) {
+		return false
+	}
+
+	if rec.firstNext {
+		rec.firstNext = false
+	} else {
+		rec.currentIndex++
+	}
+
+	return true
+}
+
+// CurrentAsArray returns the current item of the iteration typed as an Array.
+// The second result is false if the current item cannot be converted as an Array.
+func (rec *recordArray) CurrentAsArray() (RecordArray, bool) {
+	if arrayInterface, canConvert := rec.getCurrent().([]interface{}); canConvert {
+		return NewRecordArray(arrayInterface), true
+	}
+
+	return nil, false
+}
+
+// CurrentAsMap returns the current item of the iteration typed as a Map.
+// The second result is false if the current item cannot be converted as a Map.
+func (rec *recordArray) CurrentAsMap() (*RecordMap, bool) {
+	if mapInterface, canConvert := rec.getCurrent().(map[string]interface{}); canConvert {
+		recordMap := decodeMap(mapInterface)
+		return &recordMap, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsString returns the current item of the iteration typed as a String.
+// The second result is false if the current item cannot be converted as a String.
+func (rec *recordArray) CurrentAsString() (*string, bool) {
+	if converted, canConvert := rec.getCurrent().(string); canConvert {
+		return &converted, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsInt returns the current item of the iteration typed as an Int.
+// The second result is false if the current item cannot be converted as an Int.
+func (rec *recordArray) CurrentAsInt() (*int64, bool) {
+	if converted, canConvert := rec.getCurrent().(int64); canConvert {
+		return &converted, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsFloat returns the current item of the iteration typed as a Float.
+// The second result is false if the current item cannot be converted as a Float.
+func (rec *recordArray) CurrentAsFloat() (*float64, bool) {
+	if converted, canConvert := rec.getCurrent().(float64); canConvert {
+		return &converted, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsBool returns the current item of the iteration typed as a Bool.
+// The second result is false if the current item cannot be converted as a Bool.
+func (rec *recordArray) CurrentAsBool() (*bool, bool) {
+	if converted, canConvert := rec.getCurrent().(bool); canConvert {
+		return &converted, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsTime returns the current item of the iteration typed as a Time.
+// The second result is false if the current item cannot be converted as a Time.
+func (rec *recordArray) CurrentAsTime() (*time.Time, bool) {
+	if converted, canConvert := rec.getCurrent().(time.Time); canConvert {
+		return &converted, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsNode returns the current item of the iteration typed as a Node.
+// The second result is false if the current item cannot be converted as a Node.
+func (rec *recordArray) CurrentAsNode() (neo4j.Node, bool) {
+	if converted, canConvert := rec.getCurrent().(neo4j.Node); canConvert {
+		return converted, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsRelation returns the current item of the iteration typed as a Relation.
+// The second result is false if the current item cannot be converted as a Relation.
+func (rec *recordArray) CurrentAsRelation() (neo4j.Relationship, bool) {
+	if converted, canConvert := rec.getCurrent().(neo4j.Relationship); canConvert {
+		return converted, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsPath returns the current item of the iteration typed as a Path.
+// The second result is false if the current item cannot be converted as a Path.
+func (rec *recordArray) CurrentAsPath() (neo4j.Path, bool) {
+	if converted, canConvert := rec.getCurrent().(neo4j.Path); canConvert {
+		return converted, true
+	}
+
+	return nil, false
+}
+
+// CurrentAsInterface returns the current item of the iteration typed as an untyped Interface.
+func (rec *recordArray) CurrentAsInterface() interface{} {
+	return rec.getCurrent()
 }
 
 // QueryResult is the equivalent of neo4j.Result for neo4go manager queries
@@ -146,66 +335,13 @@ func Collect(from QueryResult, err error) ([]RecordMap, internalErr.Neo4GoError)
 }
 
 // decodeItemInRecordMap takes a string key and an interface value and put it inside the right map field of the result
-func decodeItemInRecordMap(key string, value interface{}, resultRecord *RecordMap) internalErr.Neo4GoError {
+func decodeItemInRecordMap(key string, value interface{}, resultRecord *RecordMap) {
 	switch typedVal := value.(type) {
 	case []interface{}:
-		// If the value is an array, first check if the items can be typed, else return an interface array
-
-		// Check maps array
-		newRecordMapArray := make([]RecordMap, 0)
-		for _, item := range typedVal {
-			if convertedItem, canConvert := item.(map[string]interface{}); canConvert {
-				innerRecordMap, err := decodeMap(convertedItem)
-				if err != nil {
-					return err
-				}
-				newRecordMapArray = append(newRecordMapArray, *innerRecordMap)
-			}
-		}
-
-		// Check nodes array
-		newNodeArray := make([]neo4j.Node, 0)
-		for _, item := range typedVal {
-			if convertedItem, canConvert := item.(neo4j.Node); canConvert {
-				newNodeArray = append(newNodeArray, convertedItem)
-			}
-		}
-
-		// Check relationships array
-		newRelationshipArray := make([]neo4j.Relationship, 0)
-		for _, item := range typedVal {
-			if convertedItem, canConvert := item.(neo4j.Relationship); canConvert {
-				newRelationshipArray = append(newRelationshipArray, convertedItem)
-			}
-		}
-
-		// Check paths array
-		newPathArray := make([]neo4j.Path, 0)
-		for _, item := range typedVal {
-			if convertedItem, canConvert := item.(neo4j.Path); canConvert {
-				newPathArray = append(newPathArray, convertedItem)
-			}
-		}
-
-		// Check which array could be decoded
-		switch len(typedVal) {
-		case len(newRecordMapArray):
-			resultRecord.MapArrays[key] = newRecordMapArray
-		case len(newNodeArray):
-			resultRecord.NodeArrays[key] = newNodeArray
-		case len(newRelationshipArray):
-			resultRecord.RelationshipArrays[key] = newRelationshipArray
-		case len(newPathArray):
-			resultRecord.PathArrays[key] = newPathArray
-		default:
-			resultRecord.Arrays[key] = typedVal
-		}
+		resultRecord.Arrays[key] = NewRecordArray(typedVal)
 	case map[string]interface{}:
-		innerRecordMap, err := decodeMap(typedVal)
-		if err != nil {
-			return err
-		}
-		resultRecord.Maps[key] = *innerRecordMap
+		innerRecordMap := decodeMap(typedVal)
+		resultRecord.Maps[key] = innerRecordMap
 	case string:
 		resultRecord.Strings[key] = typedVal
 	case int64:
@@ -229,12 +365,10 @@ func decodeItemInRecordMap(key string, value interface{}, resultRecord *RecordMa
 	default:
 		resultRecord.Others[key] = typedVal
 	}
-
-	return nil
 }
 
 // decodeMap takes a map as input and converts it into a RecordMap for simplicity of use
-func decodeMap(mapInterface map[string]interface{}) (*RecordMap, internalErr.Neo4GoError) {
+func decodeMap(mapInterface map[string]interface{}) RecordMap {
 	newRecordMap := newEmptyRecordMap()
 
 	for key, val := range mapInterface {
@@ -242,13 +376,10 @@ func decodeMap(mapInterface map[string]interface{}) (*RecordMap, internalErr.Neo
 			continue
 		}
 
-		err := decodeItemInRecordMap(key, val, &newRecordMap)
-		if err != nil {
-			return nil, err
-		}
+		decodeItemInRecordMap(key, val, &newRecordMap)
 	}
 
-	return &newRecordMap, nil
+	return newRecordMap
 }
 
 // queryResult is the default implementation of the QueryResult interface
@@ -288,10 +419,7 @@ func (res *queryResult) Record() (*RecordMap, internalErr.Neo4GoError) {
 			continue
 		}
 
-		err := decodeItemInRecordMap(recordKey, recordValue, &newRecordMap)
-		if err != nil {
-			return nil, err
-		}
+		decodeItemInRecordMap(recordKey, recordValue, &newRecordMap)
 	}
 
 	return &newRecordMap, nil

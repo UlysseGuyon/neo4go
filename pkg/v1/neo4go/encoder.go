@@ -35,6 +35,7 @@ type EncoderOptions struct {
 
 // neo4goEncoder is the default implementation of the Encoder interface
 type neo4goEncoder struct {
+	// The configuration of this encoder
 	options EncoderOptions
 }
 
@@ -321,7 +322,6 @@ var (
 			// Run through all of its fields
 			for i := 0; i < usedVal.NumField(); i++ {
 				field := usedType.Field(i)
-				key := strings.ToLower(field.Name) // The key in the resulting map
 
 				// Get the field tag by the name given in encoder options
 				fieldVal := usedVal.FieldByName(field.Name)
@@ -342,6 +342,7 @@ var (
 					}
 				}
 
+				var key string
 				// If the tag name exists and its value exists, then set the resulting map kay as this name. Else, skip this field
 				if nameInTag != "" && nameInTag != "-" {
 					key = nameInTag

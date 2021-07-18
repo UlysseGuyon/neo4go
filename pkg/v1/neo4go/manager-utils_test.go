@@ -128,7 +128,7 @@ func Test_isWriteQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isWriteQuery(tt.args.query); got != tt.want {
+			if got := IsWriteQuery(tt.args.query); got != tt.want {
 				t.Errorf("isWriteQuery() = %v, want %v", got, tt.want)
 			}
 		})

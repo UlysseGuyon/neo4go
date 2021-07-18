@@ -28,6 +28,12 @@ func IsQueryError(err error) bool {
 	return canConvert
 }
 
+// IsTransactionError tells if the error is a neo4go Query error
+func IsTransactionError(err error) bool {
+	_, canConvert := err.(*internalErr.TransactionError)
+	return canConvert
+}
+
 // IsUnknownError tells if the error is a neo4go Unknown error
 func IsUnknownError(err error) bool {
 	_, canConvert := err.(*internalErr.UnknownError)

@@ -6,6 +6,7 @@ import (
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
 )
 
+// validateManagerOptions allows early detection of wrong options
 func validateManagerOptions(opt ManagerOptions) internalErr.Neo4GoError {
 	if opt.URI == "" {
 		return &internalErr.InitError{
@@ -26,7 +27,8 @@ func validateManagerOptions(opt ManagerOptions) internalErr.Neo4GoError {
 	return nil
 }
 
-func isWriteQuery(query string) bool {
+// IsWriteQuery determines if the given cypher query's type is write or read
+func IsWriteQuery(query string) bool {
 	isWrite := false
 
 	allWriteClauses := []string{
