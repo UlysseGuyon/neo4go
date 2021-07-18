@@ -2,9 +2,25 @@ version: 2.1
 
 orbs:
   go: circleci/go@1.7.0
-  go-lint: timakin/golangci-lint@0.1.1
 
 jobs:
+  lint:
+    parameters:
+      go_version:
+        type: string
+        default: "1.15.13"
+    executor:
+      name: go/default
+      tag: '<< parameters.go_version >>'
+    steps:
+      - checkout
+      - go/install:
+          version: << parameters.go_version >>
+      - go/mod-download-cached
+      - run: |
+          wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.41.1
+      - run: |
+          golangci-lint run
   build-example:
     parameters:
       example_name:
@@ -52,7 +68,7 @@ jobs:
 workflows:
   "Lint":
     jobs:
-      - go-lint/lint
+      - lint
   "Build all examples":
     jobs:
       - build-example:
