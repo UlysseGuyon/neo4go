@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   go: circleci/go@1.7.0
+  go-lint: timakin/golangci-lint@0.1.1
 
 jobs:
   build-example:
@@ -49,12 +50,15 @@ jobs:
           path: << parameters.artifact_name >>.html
 
 workflows:
-  build-all-examples:
+  "Lint":
+    jobs:
+      - go-lint/lint
+  "Build all examples":
     jobs:
       - build-example:
           example_name: basics
       - build-example:
           example_name: transactions
-  run-unit-tests:
+  "Run unit tests":
     jobs:
       - unit-tests

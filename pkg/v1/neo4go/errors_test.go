@@ -165,7 +165,7 @@ func TestIsTransactionError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsQueryError(tt.args.err); got != tt.want {
+			if got := IsTransactionError(tt.args.err); got != tt.want {
 				t.Errorf("IsTransactionError() = %v, want %v", got, tt.want)
 			}
 		})
