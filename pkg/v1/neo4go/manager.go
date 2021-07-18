@@ -211,7 +211,10 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 		}
 
 		if queryParams.CommitOnSuccess {
-			m.Commit(queryParams.Transaction)
+			err := m.Commit(queryParams.Transaction)
+			if err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		// Determine if the query is read or write and set the access mode depending on it
