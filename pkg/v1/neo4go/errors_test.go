@@ -139,6 +139,39 @@ func TestIsQueryError(t *testing.T) {
 	}
 }
 
+func TestIsTransactionError(t *testing.T) {
+	type args struct {
+		err error
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Should detect Transaction error",
+			args: args{
+				err: &internalErr.TransactionError{},
+			},
+			want: true,
+		},
+		{
+			name: "Should not detect basic error",
+			args: args{
+				err: errors.New(""),
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsQueryError(tt.args.err); got != tt.want {
+				t.Errorf("IsTransactionError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIsUnknownError(t *testing.T) {
 	type args struct {
 		err error

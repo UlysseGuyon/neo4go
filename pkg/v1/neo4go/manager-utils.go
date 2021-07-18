@@ -26,7 +26,7 @@ func validateManagerOptions(opt ManagerOptions) internalErr.Neo4GoError {
 	return nil
 }
 
-func isWriteQuery(query string) bool {
+func IsWriteQuery(query string) bool {
 	isWrite := false
 
 	allWriteClauses := []string{

@@ -319,6 +319,59 @@ func TestQueryError_FmtError(t *testing.T) {
 	}
 }
 
+func TestTransactionError_Error(t *testing.T) {
+	tests := []struct {
+		name string
+		err  *TransactionError
+		want string
+	}{
+		{
+			name: "Should contain raw error string",
+			err: &TransactionError{
+				Err: "A typical error",
+			},
+			want: "A typical error",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.err.Error(); !strings.Contains(got, tt.want) {
+				t.Errorf("TransactionError.Error() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTransactionError_FmtError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  *TransactionError
+		want string
+	}{
+		{
+			name: "Should contain error type name",
+			err: &TransactionError{
+				Err: "A typical error",
+			},
+			want: TransactionErrorTypeName,
+		},
+		{
+			name: "Should contain raw error string",
+			err: &TransactionError{
+				Err: "A typical error",
+			},
+			want: "A typical error",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.err.FmtError(); !strings.Contains(got, tt.want) {
+				t.Errorf("TransactionError.FmtError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestUnknownError_Error(t *testing.T) {
 	tests := []struct {
 		name string
