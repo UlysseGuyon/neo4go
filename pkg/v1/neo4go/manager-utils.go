@@ -7,7 +7,7 @@ import (
 )
 
 // validateManagerOptions allows early detection of wrong options
-func validateManagerOptions(opt ManagerOptions) internalErr.Neo4GoError {
+func validateManagerOptions(opt ManagerOptions) Neo4GoError {
 	if opt.URI == "" {
 		return &internalErr.InitError{
 			Err:    "Database URI given in options is empty",

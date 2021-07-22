@@ -14,13 +14,13 @@ import (
 // as custom struct fields, provided the right pointer and that the struct has the right tags on its fields
 type Decoder interface {
 	// DecodeNode takes a node like object (pointers and lists are accepted) and decodes it in the second argument
-	DecodeNode(interface{}, interface{}) internalErr.Neo4GoError
+	DecodeNode(interface{}, interface{}) Neo4GoError
 
 	// DecodeNode takes a relationship like object (pointers and lists are accepted) and decodes it in the second argument
-	DecodeRelationship(interface{}, interface{}) internalErr.Neo4GoError
+	DecodeRelationship(interface{}, interface{}) Neo4GoError
 
 	// DecodeNode takes a path like object (pointers are accepted) and decodes its nodes in the second argument and its relationships in the third
-	DecodePath(interface{}, interface{}, interface{}) internalErr.Neo4GoError
+	DecodePath(interface{}, interface{}, interface{}) Neo4GoError
 }
 
 // neo4goDecoder is the default implementation of the Decoder interface
@@ -52,7 +52,7 @@ func NewDecoder(options *mapstructure.DecoderConfig) Decoder {
 
 // decodeSingleValue takes a map of values (typically a Node.Props() or Relationship.Props()) and maps it in the
 // outputs fields using the mapstructure package
-func (decoder *neo4goDecoder) decodeSingleValue(mapInput map[string]interface{}, output interface{}) internalErr.Neo4GoError {
+func (decoder *neo4goDecoder) decodeSingleValue(mapInput map[string]interface{}, output interface{}) Neo4GoError {
 	// Check that the output is of the right type/kind
 	outputKind := reflect.ValueOf(output).Kind()
 	if outputKind != reflect.Ptr && outputKind != reflect.Interface {
@@ -85,7 +85,7 @@ func (decoder *neo4goDecoder) decodeSingleValue(mapInput map[string]interface{},
 }
 
 // DecodeNode takes a node like object (pointers and lists are accepted) and decodes it in the second argument
-func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) internalErr.Neo4GoError {
+func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) Neo4GoError {
 	expectedTypes := []string{
 		"Node",
 		"*Node",
@@ -215,7 +215,7 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) i
 }
 
 // DecodeNode takes a relationship like object (pointers and lists are accepted) and decodes it in the second argument
-func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, output interface{}) internalErr.Neo4GoError {
+func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, output interface{}) Neo4GoError {
 	expectedTypes := []string{
 		"Relationship",
 		"*Relationship",
@@ -346,7 +346,7 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 
 // DecodePath takes a path like object (pointers are accepted) and decodes it
 // in the second argument for the nodes and in the third argument for the relationships
-func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface{}, outputRelationships interface{}) internalErr.Neo4GoError {
+func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface{}, outputRelationships interface{}) Neo4GoError {
 	expectedTypes := []string{
 		"Path",
 		"*Path",

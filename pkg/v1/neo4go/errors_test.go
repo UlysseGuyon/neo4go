@@ -2,10 +2,37 @@ package neo4go
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
 )
+
+func TestToDriverError(t *testing.T) {
+	type args struct {
+		err error
+	}
+	tests := []struct {
+		name string
+		args args
+		want Neo4GoError
+	}{
+		{
+			name: "Should return unknwon error if it's not a neo4j-go-driver error",
+			args: args{
+				err: errors.New("A typical error"),
+			},
+			want: &internalErr.UnknownError{Err: "A typical error"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ToDriverError(tt.args.err); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToDriverError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestIsInitError(t *testing.T) {
 	type args struct {

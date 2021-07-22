@@ -12,22 +12,22 @@ type Manager interface {
 	IsConnected() bool
 
 	// Query allows a single query to be made in database, possibly through an existing transaction
-	Query(QueryParams) (QueryResult, internalErr.Neo4GoError)
+	Query(QueryParams) (QueryResult, Neo4GoError)
 
 	// BeginTransaction starts a new transaction and stores it under the returned ID
-	BeginTransaction(TransactionParams) (string, internalErr.Neo4GoError)
+	BeginTransaction(TransactionParams) (string, Neo4GoError)
 
 	// Commit commits the transaction that has the given ID
-	Commit(string) internalErr.Neo4GoError
+	Commit(string) Neo4GoError
 
 	// Rollback rolls back the transaction that has the given ID
-	Rollback(string) internalErr.Neo4GoError
+	Rollback(string) Neo4GoError
 
 	// LastBookmark returns the bookmark obtained by the session that ran the last query
 	LastBookmark() string
 
 	// Close closes the driver
-	Close() internalErr.Neo4GoError
+	Close() Neo4GoError
 }
 
 // ManagerOptions represents the configuration applied to a manager
@@ -112,7 +112,7 @@ type manager struct {
 }
 
 // NewManager creates a new instance of Manager, with a given config.
-func NewManager(options ManagerOptions) (Manager, internalErr.Neo4GoError) {
+func NewManager(options ManagerOptions) (Manager, Neo4GoError) {
 	newManager := manager{}
 
 	// Init the driver of the manager
@@ -134,7 +134,7 @@ func NewManager(options ManagerOptions) (Manager, internalErr.Neo4GoError) {
 }
 
 // init creates a new driver in the manager from the given config.
-func (m *manager) init(options ManagerOptions) internalErr.Neo4GoError {
+func (m *manager) init(options ManagerOptions) Neo4GoError {
 	// Check if the config was correctly filled
 	optErr := validateManagerOptions(options)
 	if optErr != nil {
@@ -157,7 +157,7 @@ func (m *manager) init(options ManagerOptions) internalErr.Neo4GoError {
 	)
 
 	if err != nil {
-		return internalErr.ToDriverError(err)
+		return ToDriverError(err)
 	}
 
 	m.options = &options
@@ -180,29 +180,29 @@ func (m *manager) IsConnected() bool {
 }
 
 // Close closes the driver
-func (m *manager) Close() internalErr.Neo4GoError {
+func (m *manager) Close() Neo4GoError {
 	for _, val := range m.transactionSessions {
 		err := val.transaction.Close()
 		if err != nil {
-			return internalErr.ToDriverError(err)
+			return ToDriverError(err)
 		}
 
 		err = val.session.Close()
 		if err != nil {
-			return internalErr.ToDriverError(err)
+			return ToDriverError(err)
 		}
 	}
 
 	err := (*m.driver).Close()
 	if err != nil {
-		return internalErr.ToDriverError(err)
+		return ToDriverError(err)
 	}
 
 	return nil
 }
 
 // Query allows a single query to be made in database, possibly through an existing transaction
-func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4GoError) {
+func (m *manager) Query(queryParams QueryParams) (QueryResult, Neo4GoError) {
 	// First, we convert all the input objects as interface maps
 	paramsMap := make(map[string]interface{})
 	for key, value := range queryParams.Params {
@@ -226,7 +226,7 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 
 		rawResult, err = txSession.transaction.Run(queryParams.Query, paramsMap)
 		if err != nil {
-			return nil, internalErr.ToDriverError(err)
+			return nil, ToDriverError(err)
 		}
 
 		if queryParams.CommitOnSuccess {
@@ -253,14 +253,14 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 			Bookmarks:    queryParams.Bookmarks,
 		})
 		if err != nil {
-			return nil, internalErr.ToDriverError(err)
+			return nil, ToDriverError(err)
 		}
 		defer usedSession.Close()
 
 		// Run the query with the new session and the query config
 		rawResult, err = usedSession.Run(queryParams.Query, paramsMap, queryParams.Configurers...)
 		if err != nil {
-			return nil, internalErr.ToDriverError(err)
+			return nil, ToDriverError(err)
 		}
 	}
 
@@ -273,7 +273,7 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, internalErr.Neo4G
 }
 
 // BeginTransaction starts a new transaction and stores it under the returned ID
-func (m *manager) BeginTransaction(params TransactionParams) (string, internalErr.Neo4GoError) {
+func (m *manager) BeginTransaction(params TransactionParams) (string, Neo4GoError) {
 	newTxUUID, err := uuid.NewV4()
 	if err != nil {
 		return "", &internalErr.TransactionError{
@@ -293,7 +293,7 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, internalEr
 		Bookmarks:    params.Bookmarks,
 	})
 	if err != nil {
-		return "", internalErr.ToDriverError(err)
+		return "", ToDriverError(err)
 	}
 
 	// Then begin the transaction
@@ -301,9 +301,9 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, internalEr
 	if err != nil {
 		closeErr := session.Close()
 		if closeErr != nil {
-			return "", internalErr.ToDriverError(closeErr)
+			return "", ToDriverError(closeErr)
 		}
-		return "", internalErr.ToDriverError(err)
+		return "", ToDriverError(err)
 	}
 
 	// Finally, store the transaction and its session to the manager's map
@@ -318,7 +318,7 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, internalEr
 }
 
 // Commit commits the transaction that has the given ID
-func (m *manager) Commit(txID string) internalErr.Neo4GoError {
+func (m *manager) Commit(txID string) Neo4GoError {
 	// Get the transaction and its session from ID
 	txSession, exists := m.transactionSessions[txID]
 	if !exists {
@@ -330,11 +330,11 @@ func (m *manager) Commit(txID string) internalErr.Neo4GoError {
 	// Commit the transaction and close its session
 	err := txSession.transaction.Commit()
 	if err != nil {
-		return internalErr.ToDriverError(err)
+		return ToDriverError(err)
 	}
 	err = txSession.session.Close()
 	if err != nil {
-		return internalErr.ToDriverError(err)
+		return ToDriverError(err)
 	}
 
 	// Remove the transaction from the manager store
@@ -344,7 +344,7 @@ func (m *manager) Commit(txID string) internalErr.Neo4GoError {
 }
 
 // Rollback rolls back the transaction that has the given ID
-func (m *manager) Rollback(txID string) internalErr.Neo4GoError {
+func (m *manager) Rollback(txID string) Neo4GoError {
 	// Get the transaction and its session from ID
 	txSession, exists := m.transactionSessions[txID]
 	if !exists {
@@ -356,11 +356,11 @@ func (m *manager) Rollback(txID string) internalErr.Neo4GoError {
 	// Commit the transaction and close its session
 	err := txSession.transaction.Rollback()
 	if err != nil {
-		return internalErr.ToDriverError(err)
+		return ToDriverError(err)
 	}
 	err = txSession.session.Close()
 	if err != nil {
-		return internalErr.ToDriverError(err)
+		return ToDriverError(err)
 	}
 
 	// Remove the transaction from the manager store

@@ -249,7 +249,7 @@ type QueryResult interface {
 	Err() error
 
 	// Record returns the current typed record.
-	Record() (*RecordMap, internalErr.Neo4GoError)
+	Record() (*RecordMap, Neo4GoError)
 
 	// Summary returns the summary information about the statement execution.
 	Summary() (neo4j.ResultSummary, error)
@@ -266,26 +266,26 @@ type QueryResult interface {
 // or reported while navigating the result stream is returned without any conversion.
 // If the result stream contains zero or more than one records error is returned.
 // This function is nearly entirely copied from https://github.com/neo4j/neo4j-go-driver/blob/4.3/neo4j/result_helpers.go
-func Single(from QueryResult, err error) (*RecordMap, internalErr.Neo4GoError) {
+func Single(from QueryResult, err error) (*RecordMap, Neo4GoError) {
 	var record *RecordMap
 
 	if err != nil {
-		if convertedErr, canConvert := err.(internalErr.Neo4GoError); canConvert {
+		if convertedErr, canConvert := err.(Neo4GoError); canConvert {
 			return nil, convertedErr
 		}
 
-		return nil, internalErr.ToDriverError(err)
+		return nil, ToDriverError(err)
 	}
 
 	if from.Next() {
 		record, err = from.Record()
 		if err != nil {
-			return nil, internalErr.ToDriverError(err)
+			return nil, ToDriverError(err)
 		}
 	}
 
 	if err := from.Err(); err != nil {
-		return nil, internalErr.ToDriverError(err)
+		return nil, ToDriverError(err)
 	}
 
 	if record == nil {
@@ -307,17 +307,17 @@ func Single(from QueryResult, err error) (*RecordMap, internalErr.Neo4GoError) {
 // resulting slice. Any error passed in or reported while navigating the result stream is
 // returned without any conversion.
 // This function is nearly entirely copied from https://github.com/neo4j/neo4j-go-driver/blob/4.3/neo4j/result_helpers.go
-func Collect(from QueryResult, err error) ([]RecordMap, internalErr.Neo4GoError) {
+func Collect(from QueryResult, err error) ([]RecordMap, Neo4GoError) {
 	var list []RecordMap
 
 	if err != nil {
-		return nil, internalErr.ToDriverError(err)
+		return nil, ToDriverError(err)
 	}
 
 	for from.Next() {
 		record, err := from.Record()
 		if err != nil {
-			return nil, internalErr.ToDriverError(err)
+			return nil, ToDriverError(err)
 		}
 		if record == nil {
 			return nil, &internalErr.QueryError{
@@ -328,7 +328,7 @@ func Collect(from QueryResult, err error) ([]RecordMap, internalErr.Neo4GoError)
 	}
 
 	if err := from.Err(); err != nil {
-		return nil, internalErr.ToDriverError(err)
+		return nil, ToDriverError(err)
 	}
 
 	return list, nil
@@ -409,7 +409,7 @@ func (res *queryResult) Err() error {
 }
 
 // Record returns the current typed record.
-func (res *queryResult) Record() (*RecordMap, internalErr.Neo4GoError) {
+func (res *queryResult) Record() (*RecordMap, Neo4GoError) {
 	record := res.result.Record()
 
 	newRecordMap := newEmptyRecordMap()

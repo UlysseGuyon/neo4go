@@ -2,14 +2,6 @@ package errors
 
 import "fmt"
 
-// Neo4GoError is an error interface allowing to point out more precisely the error type
-type Neo4GoError interface {
-	error
-
-	// FmtError returns the formatted error with a prefix
-	FmtError() string
-}
-
 // The strings representing each type of neo4go native error
 const (
 	InitErrorTypeName        = "Init"

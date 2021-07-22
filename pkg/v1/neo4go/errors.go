@@ -2,7 +2,54 @@ package neo4go
 
 import (
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
+	"github.com/neo4j/neo4j-go-driver/neo4j"
 )
+
+// Neo4GoError is an error interface allowing to point out more precisely the error type
+type Neo4GoError interface {
+	error
+
+	// FmtError returns the formatted error with a prefix
+	FmtError() string
+}
+
+// ToDriverError converts a raw error to a Neo4GoError, searching first for neo4j-go-driver errors
+func ToDriverError(err error) Neo4GoError {
+	// First check for all the neo4j-go-driver errors
+	if neo4j.IsSecurityError(err) {
+		return &internalErr.SecurityError{
+			Err: err.Error(),
+		}
+	} else if neo4j.IsAuthenticationError(err) {
+		return &internalErr.AuthError{
+			Err: err.Error(),
+		}
+	} else if neo4j.IsClientError(err) {
+		return &internalErr.ClientError{
+			Err: err.Error(),
+		}
+	} else if neo4j.IsTransientError(err) {
+		return &internalErr.TransientError{
+			Err: err.Error(),
+		}
+	} else if neo4j.IsSessionExpired(err) {
+		return &internalErr.SessionError{
+			Err: err.Error(),
+		}
+	} else if neo4j.IsServiceUnavailable(err) {
+		return &internalErr.UnavailableError{
+			Err: err.Error(),
+		}
+	} else if convertedErr, canConvert := err.(Neo4GoError); canConvert {
+		// Then if the error is already a Neo4GoError, return it as it is
+		return convertedErr
+	}
+
+	// Finally, return an unknown error if nothing was found
+	return &internalErr.UnknownError{
+		Err: err.Error(),
+	}
+}
 
 // IsInitError tells if the error is a neo4go Init error
 func IsInitError(err error) bool {
