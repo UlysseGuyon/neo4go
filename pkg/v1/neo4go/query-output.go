@@ -48,59 +48,89 @@ type RecordArray interface {
 	Next() bool
 
 	// CurrentAsArray returns the current item of the iteration typed as an Array.
-	// The second result is false if the current item cannot be converted as an Array.
+	// The second result is a non-nil error if the current item cannot be converted as an Array.
 	CurrentAsArray() (RecordArray, Neo4GoError)
 
 	// CurrentAsMap returns the current item of the iteration typed as a Map.
-	// The second result is false if the current item cannot be converted as a Map.
+	// The second result is a non-nil error if the current item cannot be converted as a Map.
 	CurrentAsMap() (*RecordMap, Neo4GoError)
 
 	// CurrentAsString returns the current item of the iteration typed as a String.
-	// The second result is false if the current item cannot be converted as a String.
+	// The second result is a non-nil error if the current item cannot be converted as a String.
 	CurrentAsString() (*string, Neo4GoError)
 
 	// CurrentAsInt returns the current item of the iteration typed as an Int.
-	// The second result is false if the current item cannot be converted as an Int.
+	// The second result is a non-nil error if the current item cannot be converted as an Int.
 	CurrentAsInt() (*int64, Neo4GoError)
 
 	// CurrentAsFloat returns the current item of the iteration typed as a Float.
-	// The second result is false if the current item cannot be converted as a Float.
+	// The second result is a non-nil error if the current item cannot be converted as a Float.
 	CurrentAsFloat() (*float64, Neo4GoError)
 
 	// CurrentAsBool returns the current item of the iteration typed as a Bool.
-	// The second result is false if the current item cannot be converted as a Bool.
+	// The second result is a non-nil error if the current item cannot be converted as a Bool.
 	CurrentAsBool() (*bool, Neo4GoError)
 
 	// CurrentAsTime returns the current item of the iteration typed as a Time.
-	// The second result is false if the current item cannot be converted as a Time.
+	// The second result is a non-nil error if the current item cannot be converted as a Time.
 	CurrentAsTime() (*time.Time, Neo4GoError)
 
 	// CurrentAsNode returns the current item of the iteration typed as a Node.
-	// The second result is false if the current item cannot be converted as a Node.
+	// The second result is a non-nil error if the current item cannot be converted as a Node.
 	CurrentAsNode() (neo4j.Node, Neo4GoError)
 
 	// CurrentAsRelation returns the current item of the iteration typed as a Relation.
-	// The second result is false if the current item cannot be converted as a Relation.
+	// The second result is a non-nil error if the current item cannot be converted as a Relation.
 	CurrentAsRelation() (neo4j.Relationship, Neo4GoError)
 
 	// CurrentAsPath returns the current item of the iteration typed as a Path.
-	// The second result is false if the current item cannot be converted as a Path.
+	// The second result is a non-nil error if the current item cannot be converted as a Path.
 	CurrentAsPath() (neo4j.Path, Neo4GoError)
 
 	// CurrentAsInterface returns the current item of the iteration typed as an untyped Interface.
 	CurrentAsInterface() interface{}
 
-	// TODO comment
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of RecordArray.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as an Array.
 	CollectAsArrays() ([]RecordArray, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of RecordMap.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a Map.
 	CollectAsMaps() ([]RecordMap, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of string.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a string.
 	CollectAsStrings() ([]string, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of int64.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as an int64.
 	CollectAsInts() ([]int64, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of float.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a float.
 	CollectAsFloats() ([]float64, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of bool.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a bool.
 	CollectAsBools() ([]bool, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of time object.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a time.Time.
 	CollectAsTimes() ([]time.Time, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of nodes.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a neo4j.Node.
 	CollectAsNodes() ([]neo4j.Node, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of relationships.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a neo4j.Relationship.
 	CollectAsRelations() ([]neo4j.Relationship, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of paths.
+	// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a neo4j.Path.
 	CollectAsPaths() ([]neo4j.Path, Neo4GoError)
+
+	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of interfaces.
 	CollectAsInterfaces() []interface{}
 }
 
@@ -114,150 +144,6 @@ type recordArray struct {
 
 	// Tells if the Next function was called at least once on this array
 	firstNext bool
-}
-
-func (rec *recordArray) CollectAsArrays() ([]RecordArray, Neo4GoError) {
-	resultArray := make([]RecordArray, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsArray()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsMaps() ([]RecordMap, Neo4GoError) {
-	resultArray := make([]RecordMap, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsMap()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, *convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsStrings() ([]string, Neo4GoError) {
-	resultArray := make([]string, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsString()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, *convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsInts() ([]int64, Neo4GoError) {
-	resultArray := make([]int64, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsInt()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, *convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsFloats() ([]float64, Neo4GoError) {
-	resultArray := make([]float64, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsFloat()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, *convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsBools() ([]bool, Neo4GoError) {
-	resultArray := make([]bool, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsBool()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, *convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsTimes() ([]time.Time, Neo4GoError) {
-	resultArray := make([]time.Time, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsTime()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, *convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsNodes() ([]neo4j.Node, Neo4GoError) {
-	resultArray := make([]neo4j.Node, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsNode()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsRelations() ([]neo4j.Relationship, Neo4GoError) {
-	resultArray := make([]neo4j.Relationship, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsRelation()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsPaths() ([]neo4j.Path, Neo4GoError) {
-	resultArray := make([]neo4j.Path, 0, len(rec.rawArray))
-
-	for rec.Next() {
-		convertedItem, err := rec.CurrentAsPath()
-		if err != nil {
-			return nil, err
-		}
-		resultArray = append(resultArray, convertedItem)
-	}
-
-	return resultArray, nil
-}
-
-func (rec *recordArray) CollectAsInterfaces() []interface{} {
-	return rec.rawArray
 }
 
 // NewRecordArray creates a new instance of RecordArray, with a given interface array.
@@ -290,7 +176,7 @@ func (rec *recordArray) Next() bool {
 }
 
 // CurrentAsArray returns the current item of the iteration typed as an Array.
-// The second result is false if the current item cannot be converted as an Array.
+// The second result is a non-nil error if the current item cannot be converted as an Array.
 func (rec *recordArray) CurrentAsArray() (RecordArray, Neo4GoError) {
 	if arrayInterface, canConvert := rec.getCurrent().([]interface{}); canConvert {
 		return NewRecordArray(arrayInterface), nil
@@ -304,7 +190,7 @@ func (rec *recordArray) CurrentAsArray() (RecordArray, Neo4GoError) {
 }
 
 // CurrentAsMap returns the current item of the iteration typed as a Map.
-// The second result is false if the current item cannot be converted as a Map.
+// The second result is a non-nil error if the current item cannot be converted as a Map.
 func (rec *recordArray) CurrentAsMap() (*RecordMap, Neo4GoError) {
 	if mapInterface, canConvert := rec.getCurrent().(map[string]interface{}); canConvert {
 		recordMap := decodeMap(mapInterface)
@@ -319,7 +205,7 @@ func (rec *recordArray) CurrentAsMap() (*RecordMap, Neo4GoError) {
 }
 
 // CurrentAsString returns the current item of the iteration typed as a String.
-// The second result is false if the current item cannot be converted as a String.
+// The second result is a non-nil error if the current item cannot be converted as a String.
 func (rec *recordArray) CurrentAsString() (*string, Neo4GoError) {
 	if converted, canConvert := rec.getCurrent().(string); canConvert {
 		return &converted, nil
@@ -333,7 +219,7 @@ func (rec *recordArray) CurrentAsString() (*string, Neo4GoError) {
 }
 
 // CurrentAsInt returns the current item of the iteration typed as an Int.
-// The second result is false if the current item cannot be converted as an Int.
+// The second result is a non-nil error if the current item cannot be converted as an Int.
 func (rec *recordArray) CurrentAsInt() (*int64, Neo4GoError) {
 	if converted, canConvert := rec.getCurrent().(int64); canConvert {
 		return &converted, nil
@@ -347,7 +233,7 @@ func (rec *recordArray) CurrentAsInt() (*int64, Neo4GoError) {
 }
 
 // CurrentAsFloat returns the current item of the iteration typed as a Float.
-// The second result is false if the current item cannot be converted as a Float.
+// The second result is a non-nil error if the current item cannot be converted as a Float.
 func (rec *recordArray) CurrentAsFloat() (*float64, Neo4GoError) {
 	if converted, canConvert := rec.getCurrent().(float64); canConvert {
 		return &converted, nil
@@ -361,7 +247,7 @@ func (rec *recordArray) CurrentAsFloat() (*float64, Neo4GoError) {
 }
 
 // CurrentAsBool returns the current item of the iteration typed as a Bool.
-// The second result is false if the current item cannot be converted as a Bool.
+// The second result is a non-nil error if the current item cannot be converted as a Bool.
 func (rec *recordArray) CurrentAsBool() (*bool, Neo4GoError) {
 	if converted, canConvert := rec.getCurrent().(bool); canConvert {
 		return &converted, nil
@@ -375,7 +261,7 @@ func (rec *recordArray) CurrentAsBool() (*bool, Neo4GoError) {
 }
 
 // CurrentAsTime returns the current item of the iteration typed as a Time.
-// The second result is false if the current item cannot be converted as a Time.
+// The second result is a non-nil error if the current item cannot be converted as a Time.
 func (rec *recordArray) CurrentAsTime() (*time.Time, Neo4GoError) {
 	if converted, canConvert := rec.getCurrent().(time.Time); canConvert {
 		return &converted, nil
@@ -389,7 +275,7 @@ func (rec *recordArray) CurrentAsTime() (*time.Time, Neo4GoError) {
 }
 
 // CurrentAsNode returns the current item of the iteration typed as a Node.
-// The second result is false if the current item cannot be converted as a Node.
+// The second result is a non-nil error if the current item cannot be converted as a Node.
 func (rec *recordArray) CurrentAsNode() (neo4j.Node, Neo4GoError) {
 	if converted, canConvert := rec.getCurrent().(neo4j.Node); canConvert {
 		return converted, nil
@@ -403,7 +289,7 @@ func (rec *recordArray) CurrentAsNode() (neo4j.Node, Neo4GoError) {
 }
 
 // CurrentAsRelation returns the current item of the iteration typed as a Relation.
-// The second result is false if the current item cannot be converted as a Relation.
+// The second result is a non-nil error if the current item cannot be converted as a Relation.
 func (rec *recordArray) CurrentAsRelation() (neo4j.Relationship, Neo4GoError) {
 	if converted, canConvert := rec.getCurrent().(neo4j.Relationship); canConvert {
 		return converted, nil
@@ -417,7 +303,7 @@ func (rec *recordArray) CurrentAsRelation() (neo4j.Relationship, Neo4GoError) {
 }
 
 // CurrentAsPath returns the current item of the iteration typed as a Path.
-// The second result is false if the current item cannot be converted as a Path.
+// The second result is a non-nil error if the current item cannot be converted as a Path.
 func (rec *recordArray) CurrentAsPath() (neo4j.Path, Neo4GoError) {
 	if converted, canConvert := rec.getCurrent().(neo4j.Path); canConvert {
 		return converted, nil
@@ -433,6 +319,171 @@ func (rec *recordArray) CurrentAsPath() (neo4j.Path, Neo4GoError) {
 // CurrentAsInterface returns the current item of the iteration typed as an untyped Interface.
 func (rec *recordArray) CurrentAsInterface() interface{} {
 	return rec.getCurrent()
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of RecordArray.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as an Array.
+func (rec *recordArray) CollectAsArrays() ([]RecordArray, Neo4GoError) {
+	resultArray := make([]RecordArray, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsArray()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of RecordMap.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a Map.
+func (rec *recordArray) CollectAsMaps() ([]RecordMap, Neo4GoError) {
+	resultArray := make([]RecordMap, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsMap()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of string.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a string.
+func (rec *recordArray) CollectAsStrings() ([]string, Neo4GoError) {
+	resultArray := make([]string, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsString()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of int64.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as an int64.
+func (rec *recordArray) CollectAsInts() ([]int64, Neo4GoError) {
+	resultArray := make([]int64, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsInt()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of float.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a float.
+func (rec *recordArray) CollectAsFloats() ([]float64, Neo4GoError) {
+	resultArray := make([]float64, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsFloat()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of bool.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a bool.
+func (rec *recordArray) CollectAsBools() ([]bool, Neo4GoError) {
+	resultArray := make([]bool, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsBool()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of time object.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a time.Time.
+func (rec *recordArray) CollectAsTimes() ([]time.Time, Neo4GoError) {
+	resultArray := make([]time.Time, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsTime()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of nodes.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a neo4j.Node.
+func (rec *recordArray) CollectAsNodes() ([]neo4j.Node, Neo4GoError) {
+	resultArray := make([]neo4j.Node, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsNode()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of relationships.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a neo4j.Relationship.
+func (rec *recordArray) CollectAsRelations() ([]neo4j.Relationship, Neo4GoError) {
+	resultArray := make([]neo4j.Relationship, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsRelation()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of paths.
+// The second result is a non-nil error if at least one item of the RecordArray cannot be converted as a neo4j.Path.
+func (rec *recordArray) CollectAsPaths() ([]neo4j.Path, Neo4GoError) {
+	resultArray := make([]neo4j.Path, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, err := rec.CurrentAsPath()
+		if err != nil {
+			return nil, err
+		}
+		resultArray = append(resultArray, convertedItem)
+	}
+
+	return resultArray, nil
+}
+
+// CollectAsArrays returns the whole array of this RecordArray typed as an Array of interfaces.
+func (rec *recordArray) CollectAsInterfaces() []interface{} {
+	return rec.rawArray
 }
 
 // QueryResult is the equivalent of neo4j.Result for neo4go manager queries
