@@ -88,6 +88,19 @@ type RecordArray interface {
 
 	// CurrentAsInterface returns the current item of the iteration typed as an untyped Interface.
 	CurrentAsInterface() interface{}
+
+	// TODO comment
+	CollectAsArrays() ([]RecordArray, bool)
+	CollectAsMaps() ([]RecordMap, bool)
+	CollectAsStrings() ([]string, bool)
+	CollectAsInts() ([]int64, bool)
+	CollectAsFloats() ([]float64, bool)
+	CollectAsBools() ([]bool, bool)
+	CollectAsTimes() ([]time.Time, bool)
+	CollectAsNodes() ([]neo4j.Node, bool)
+	CollectAsRelations() ([]neo4j.Relationship, bool)
+	CollectAsPaths() ([]neo4j.Path, bool)
+	CollectAsInterfaces() []interface{}
 }
 
 // recordArray is the default implementation of RecordArray
@@ -100,6 +113,150 @@ type recordArray struct {
 
 	// Tells if the Next function was called at least once on this array
 	firstNext bool
+}
+
+func (rec *recordArray) CollectAsArrays() ([]RecordArray, bool) {
+	resultArray := make([]RecordArray, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsArray()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsMaps() ([]RecordMap, bool) {
+	resultArray := make([]RecordMap, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsMap()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsStrings() ([]string, bool) {
+	resultArray := make([]string, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsString()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsInts() ([]int64, bool) {
+	resultArray := make([]int64, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsInt()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsFloats() ([]float64, bool) {
+	resultArray := make([]float64, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsFloat()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsBools() ([]bool, bool) {
+	resultArray := make([]bool, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsBool()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsTimes() ([]time.Time, bool) {
+	resultArray := make([]time.Time, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsTime()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, *convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsNodes() ([]neo4j.Node, bool) {
+	resultArray := make([]neo4j.Node, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsNode()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsRelations() ([]neo4j.Relationship, bool) {
+	resultArray := make([]neo4j.Relationship, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsRelation()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsPaths() ([]neo4j.Path, bool) {
+	resultArray := make([]neo4j.Path, 0, len(rec.rawArray))
+
+	for rec.Next() {
+		convertedItem, canConvert := rec.CurrentAsPath()
+		if !canConvert {
+			return nil, false
+		}
+		resultArray = append(resultArray, convertedItem)
+	}
+
+	return resultArray, false
+}
+
+func (rec *recordArray) CollectAsInterfaces() []interface{} {
+	return rec.rawArray
 }
 
 // NewRecordArray creates a new instance of RecordArray, with a given interface array.
