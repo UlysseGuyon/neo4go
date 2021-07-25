@@ -41,11 +41,59 @@ func newEmptyRecordMap() RecordMap {
 	}
 }
 
+// DecodeNode is an utilitary function that automatically decodes a node from the record object
+func (rec *RecordMap) DecodeNode(decoder *Decoder, nodeName string, outpout interface{}) Neo4GoError {
+	node, exists := rec.Nodes[nodeName]
+	if !exists {
+		return &internalErr.QueryError{Err: fmt.Sprintf("Node '%s' was not found in record", nodeName)}
+	}
+
+	if decoder == nil {
+		newDecoder := NewDecoder(nil)
+		decoder = &newDecoder
+	}
+
+	return (*decoder).DecodeNode(&node, outpout)
+}
+
+// DecodeRelation is an utilitary function that automatically decodes a relationship from the record object
+func (rec *RecordMap) DecodeRelation(decoder *Decoder, relationName string, outpout interface{}) Neo4GoError {
+	relation, exists := rec.Relations[relationName]
+	if !exists {
+		return &internalErr.QueryError{Err: fmt.Sprintf("Relationship '%s' was not found in record", relationName)}
+	}
+
+	if decoder == nil {
+		newDecoder := NewDecoder(nil)
+		decoder = &newDecoder
+	}
+
+	return (*decoder).DecodeRelationship(&relation, outpout)
+}
+
+// DecodePath is an utilitary function that automatically decodes a path from the record object
+func (rec *RecordMap) DecodePath(decoder *Decoder, pathName string, outputNode interface{}, outputRelation interface{}) Neo4GoError {
+	path, exists := rec.Paths[pathName]
+	if !exists {
+		return &internalErr.QueryError{Err: fmt.Sprintf("Path '%s' was not found in record", pathName)}
+	}
+
+	if decoder == nil {
+		newDecoder := NewDecoder(nil)
+		decoder = &newDecoder
+	}
+
+	return (*decoder).DecodePath(&path, outputNode, outputRelation)
+}
+
 // RecordMap contains all the typed objects retrieved from a neo4j array in a result.
 // The items in the array can be iterated through via the Next function and retrieved as typed objects via the good function
 type RecordArray interface {
 	// Next iterates to the next item of the array and return false if there are no more items
 	Next() bool
+
+	// Len returns the length of this array
+	Len() int
 
 	// CurrentAsArray returns the current item of the iteration typed as an Array.
 	// The second result is a non-nil error if the current item cannot be converted as an Array.
@@ -132,6 +180,12 @@ type RecordArray interface {
 
 	// CollectAsArrays returns the whole array of this RecordArray typed as an Array of interfaces.
 	CollectAsInterfaces() []interface{}
+
+	// CollectAndDecodeAsNodes collects all items of this array and converts them as nodes, then decodes them into the output interface
+	CollectAndDecodeAsNodes(*Decoder, interface{}) Neo4GoError
+
+	// CollectAndDecodeAsRelations collects all items of this array and converts them as relationships, then decodes them into the output interface
+	CollectAndDecodeAsRelations(*Decoder, interface{}) Neo4GoError
 }
 
 // recordArray is the default implementation of RecordArray
@@ -173,6 +227,11 @@ func (rec *recordArray) Next() bool {
 	}
 
 	return true
+}
+
+// Len returns the length of this array
+func (rec *recordArray) Len() int {
+	return len(rec.rawArray)
 }
 
 // CurrentAsArray returns the current item of the iteration typed as an Array.
@@ -484,6 +543,36 @@ func (rec *recordArray) CollectAsPaths() ([]neo4j.Path, Neo4GoError) {
 // CollectAsArrays returns the whole array of this RecordArray typed as an Array of interfaces.
 func (rec *recordArray) CollectAsInterfaces() []interface{} {
 	return rec.rawArray
+}
+
+// CollectAndDecodeAsNodes collects all items of this array and converts them as nodes, then decodes them into the output interface
+func (rec *recordArray) CollectAndDecodeAsNodes(decoder *Decoder, output interface{}) Neo4GoError {
+	if decoder == nil {
+		newDecoder := NewDecoder(nil)
+		decoder = &newDecoder
+	}
+
+	nodeList, err := rec.CollectAsNodes()
+	if err != nil {
+		return err
+	}
+
+	return (*decoder).DecodeNode(&nodeList, output)
+}
+
+// CollectAndDecodeAsRelations collects all items of this array and converts them as relationships, then decodes them into the output interface
+func (rec *recordArray) CollectAndDecodeAsRelations(decoder *Decoder, output interface{}) Neo4GoError {
+	if decoder == nil {
+		newDecoder := NewDecoder(nil)
+		decoder = &newDecoder
+	}
+
+	relationList, err := rec.CollectAsRelations()
+	if err != nil {
+		return err
+	}
+
+	return (*decoder).DecodeRelationship(&relationList, output)
 }
 
 // QueryResult is the equivalent of neo4j.Result for neo4go manager queries
