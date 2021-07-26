@@ -210,7 +210,7 @@ var (
 	// The hook that encodes time values as local datetimes. User should define its own hooks for other neo4j time related types
 	defaultHookTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
 		if timeVal, canConvert := i.(time.Time); canConvert {
-			timeValNeo4j := neo4j.LocalDateTimeOf(timeVal)
+			timeValNeo4j := neo4j.LocalDateTimeOf(timeVal.UTC())
 			return NewInputLocalDateTime(&timeValNeo4j), true
 		}
 
