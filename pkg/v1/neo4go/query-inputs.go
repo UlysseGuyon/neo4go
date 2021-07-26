@@ -359,6 +359,12 @@ func NewInputLocalDateTime(value *neo4j.LocalDateTime) InputStruct {
 	return &inputLocalDateTime{Value: value}
 }
 
+// NewInputUTCTime creates a primitiveInputObject from the golang type time.Time (always changed to UTC)
+func NewInputUTCTime(value *time.Time) InputStruct {
+	newLDT := neo4j.LocalDateTimeOf(value.UTC())
+	return &inputLocalDateTime{Value: &newLDT}
+}
+
 // ConvertToMap converts this input as a map of query inputs
 func (val *inputLocalDateTime) ConvertToMap() map[string]InputStruct {
 	return nil
