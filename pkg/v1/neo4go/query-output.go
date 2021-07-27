@@ -18,6 +18,7 @@ type RecordMap struct {
 	Floats    map[string]float64
 	Bools     map[string]bool
 	Times     map[string]time.Time
+	Durations map[string]time.Duration
 	Nodes     map[string]neo4j.Node
 	Relations map[string]neo4j.Relationship
 	Paths     map[string]neo4j.Path
@@ -34,12 +35,15 @@ func newEmptyRecordMap() RecordMap {
 		Floats:    make(map[string]float64),
 		Bools:     make(map[string]bool),
 		Times:     make(map[string]time.Time),
+		Durations: make(map[string]time.Duration),
 		Nodes:     make(map[string]neo4j.Node),
 		Relations: make(map[string]neo4j.Relationship),
 		Paths:     make(map[string]neo4j.Path),
 		Others:    make(map[string]interface{}),
 	}
 }
+
+// TODO decode map into struct
 
 // DecodeNode is an utilitary function that automatically decodes a node from the record object
 func (rec *RecordMap) DecodeNode(decoder Decoder, nodeName string, outpout interface{}) Neo4GoError {
@@ -683,6 +687,22 @@ func decodeItemInRecordMap(key string, value interface{}, resultRecord *RecordMa
 		resultRecord.Floats[key] = typedVal
 	case bool:
 		resultRecord.Bools[key] = typedVal
+	case time.Time:
+		resultRecord.Times[key] = typedVal
+	case neo4j.LocalDateTime:
+		resultRecord.Times[key] = typedVal.Time()
+	case neo4j.Date:
+		resultRecord.Times[key] = typedVal.Time()
+	case neo4j.OffsetTime:
+		resultRecord.Times[key] = typedVal.Time()
+	case neo4j.LocalTime:
+		resultRecord.Times[key] = typedVal.Time()
+	case neo4j.Duration:
+		resultRecord.Durations[key] =
+			30*24*time.Hour*time.Duration(typedVal.Months()) +
+				24*time.Hour*time.Duration(typedVal.Days()) +
+				time.Second*time.Duration(typedVal.Seconds()) +
+				time.Nanosecond*time.Duration(typedVal.Nanos())
 	case neo4j.Node:
 		resultRecord.Nodes[key] = typedVal
 	case *neo4j.Node:
