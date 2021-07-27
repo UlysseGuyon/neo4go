@@ -391,6 +391,11 @@ func NewInputDuration(value *neo4j.Duration) InputStruct {
 	return &inputDuration{Value: value}
 }
 
+func NewInputGoDuration(value *time.Duration) InputStruct {
+	durationValNeo4j := neo4j.DurationOf(0, int64(value.Hours()/24), int64(value.Seconds()), int(value.Nanoseconds()))
+	return &inputDuration{Value: &durationValNeo4j}
+}
+
 // ConvertToMap converts this input as a map of query inputs
 func (val *inputDuration) ConvertToMap() map[string]InputStruct {
 	return nil

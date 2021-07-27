@@ -92,8 +92,13 @@ func (encoder *neo4goEncoder) getDefaultHook() EncodeHookFunc {
 		defaultHookBool,
 		defaultHookString,
 		defaultHookByteArray,
+		defaultHookDateTime,
+		defaultHookDate,
 		defaultHookTime,
+		defaultHookLocalTime,
+		defaultHookLocalDateTime,
 		defaultHookDuration,
+		defaultHookGoDuration,
 		defaultHookPoint,
 		defaultHookNode,
 		defaultHookRelationship,
@@ -207,21 +212,78 @@ var (
 		return nil, false
 	}
 
-	// The hook that encodes time values as local datetimes. User should define its own hooks for other neo4j time related types
-	defaultHookTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
+	// The hook that encodes time values as local datetimes. This will always store time values as UTC
+	defaultHookDateTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
 		if timeVal, canConvert := i.(time.Time); canConvert {
-			timeValNeo4j := neo4j.LocalDateTimeOf(timeVal.UTC())
-			return NewInputLocalDateTime(&timeValNeo4j), true
+			return NewInputUTCTime(&timeVal), true
+		} else if timeVal, canConvert := i.(*time.Time); canConvert {
+			return NewInputUTCTime(timeVal), true
 		}
 
 		return nil, false
 	}
 
-	// The hook that encodes duration values
+	// The hook that encodes neo4j dates
+	defaultHookDate EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
+		if dateVal, canConvert := i.(neo4j.Date); canConvert {
+			return NewInputDate(&dateVal), true
+		} else if dateVal, canConvert := i.(*neo4j.Date); canConvert {
+			return NewInputDate(dateVal), true
+		}
+
+		return nil, false
+	}
+
+	// The hook that encodes neo4j offset times
+	defaultHookTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
+		if oofsetTimeVal, canConvert := i.(neo4j.OffsetTime); canConvert {
+			return NewInputTime(&oofsetTimeVal), true
+		} else if oofsetTimeVal, canConvert := i.(*neo4j.OffsetTime); canConvert {
+			return NewInputTime(oofsetTimeVal), true
+		}
+
+		return nil, false
+	}
+
+	// The hook that encodes neo4j local times
+	defaultHookLocalTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
+		if localTimeVal, canConvert := i.(neo4j.LocalTime); canConvert {
+			return NewInputLocalTime(&localTimeVal), true
+		} else if localTimeVal, canConvert := i.(*neo4j.LocalTime); canConvert {
+			return NewInputLocalTime(localTimeVal), true
+		}
+
+		return nil, false
+	}
+
+	// The hook that encodes neo4j local times
+	defaultHookLocalDateTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
+		if localDateTimeVal, canConvert := i.(neo4j.LocalDateTime); canConvert {
+			return NewInputLocalDateTime(&localDateTimeVal), true
+		} else if localDateTimeVal, canConvert := i.(*neo4j.LocalDateTime); canConvert {
+			return NewInputLocalDateTime(localDateTimeVal), true
+		}
+
+		return nil, false
+	}
+
+	// The hook that encodes neo4j durations
 	defaultHookDuration EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
+		if duration, canConvert := i.(neo4j.Duration); canConvert {
+			return NewInputDuration(&duration), true
+		} else if duration, canConvert := i.(*neo4j.Duration); canConvert {
+			return NewInputDuration(duration), true
+		}
+
+		return nil, false
+	}
+
+	// The hook that encodes golang duration values as neo4j durations
+	defaultHookGoDuration EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
 		if duration, canConvert := i.(time.Duration); canConvert {
-			durationValNeo4j := neo4j.DurationOf(0, int64(duration.Hours()/24), int64(duration.Seconds()), int(duration.Nanoseconds()))
-			return NewInputDuration(&durationValNeo4j), true
+			return NewInputGoDuration(&duration), true
+		} else if duration, canConvert := i.(*time.Duration); canConvert {
+			return NewInputGoDuration(duration), true
 		}
 
 		return nil, false
