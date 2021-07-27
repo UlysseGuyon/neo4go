@@ -256,7 +256,7 @@ var (
 		return nil, false
 	}
 
-	// The hook that encodes neo4j local times
+	// The hook that encodes neo4j local date times
 	defaultHookLocalDateTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
 		if localDateTimeVal, canConvert := i.(neo4j.LocalDateTime); canConvert {
 			return NewInputLocalDateTime(&localDateTimeVal), true
@@ -291,82 +291,55 @@ var (
 
 	// The hook that encodes neo4j point values
 	defaultHookPoint EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		var usedPoint neo4j.Point
-
-		switch typedI := i.(type) {
-		case *neo4j.Point:
-			if typedI != nil {
-				usedPoint = *typedI
-			} else {
-				return nil, false
-			}
-		case neo4j.Point:
-			usedPoint = typedI
-		default:
-			return nil, false
+		if point, canConvert := i.(neo4j.Point); canConvert {
+			return NewInputPoint(&point), true
+		} else if point, canConvert := i.(*neo4j.Point); canConvert {
+			return NewInputPoint(point), true
 		}
 
-		return NewInputPoint(&usedPoint), true
+		return nil, false
 	}
 
 	// The hook that encodes neo4j node values
 	defaultHookNode EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		var usedNode neo4j.Node
-
-		switch typedI := i.(type) {
-		case *neo4j.Node:
-			if typedI != nil {
-				usedNode = *typedI
-			} else {
-				return nil, false
+		if node, canConvert := i.(neo4j.Node); canConvert {
+			return NewInputNode(node), true
+		} else if node, canConvert := i.(*neo4j.Node); canConvert {
+			if node == nil {
+				return nil, true
 			}
-		case neo4j.Node:
-			usedNode = typedI
-		default:
-			return nil, false
+			return NewInputNode(*node), true
 		}
 
-		return NewInputNode(usedNode), true
+		return nil, false
 	}
 
 	// The hook that encodes neo4j relationship values
 	defaultHookRelationship EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		var usedRelationship neo4j.Relationship
-
-		switch typedI := i.(type) {
-		case *neo4j.Relationship:
-			if typedI != nil {
-				usedRelationship = *typedI
-			} else {
-				return nil, false
+		if relationship, canConvert := i.(neo4j.Relationship); canConvert {
+			return NewInputRelationship(relationship), true
+		} else if relationship, canConvert := i.(*neo4j.Relationship); canConvert {
+			if relationship == nil {
+				return nil, true
 			}
-		case neo4j.Relationship:
-			usedRelationship = typedI
-		default:
-			return nil, false
+			return NewInputRelationship(*relationship), true
 		}
 
-		return NewInputRelationship(usedRelationship), true
+		return nil, false
 	}
 
 	// The hook that encodes neo4j path values
 	defaultHookPath EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		var usedPath neo4j.Path
-
-		switch typedI := i.(type) {
-		case *neo4j.Path:
-			if typedI != nil {
-				usedPath = *typedI
-			} else {
-				return nil, false
+		if path, canConvert := i.(neo4j.Path); canConvert {
+			return NewInputPath(path), true
+		} else if path, canConvert := i.(*neo4j.Path); canConvert {
+			if path == nil {
+				return nil, true
 			}
-		case neo4j.Path:
-			usedPath = typedI
-		default:
-			return nil, false
+			return NewInputPath(*path), true
 		}
 
-		return NewInputPath(usedPath), true
+		return nil, false
 	}
 
 	// The hook that encodes structs and their exported/tagged fields
