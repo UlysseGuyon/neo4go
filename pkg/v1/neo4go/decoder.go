@@ -21,6 +21,8 @@ type Decoder interface {
 
 	// DecodeNode takes a path like object (pointers are accepted) and decodes its nodes in the second argument and its relationships in the third
 	DecodePath(interface{}, interface{}, interface{}) Neo4GoError
+
+	DecodeRecordMap(RecordMap, interface{}) Neo4GoError
 }
 
 // neo4goDecoder is the default implementation of the Decoder interface
@@ -393,4 +395,8 @@ func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface
 	}
 
 	return nil
+}
+
+func (decoder *neo4goDecoder) DecodeRecordMap(rec RecordMap, output interface{}) Neo4GoError {
+	return decoder.decodeSingleValue(rec.RawMap(), output)
 }

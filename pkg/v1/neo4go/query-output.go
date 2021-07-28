@@ -43,7 +43,46 @@ func newEmptyRecordMap() RecordMap {
 	}
 }
 
-// TODO decode map into struct
+func (rec *RecordMap) RawMap() map[string]interface{} {
+	resMap := make(map[string]interface{})
+
+	for key, val := range rec.Arrays {
+		resMap[key] = val.CollectAsInterfaces()
+	}
+	for key, val := range rec.Maps {
+		resMap[key] = val.RawMap()
+	}
+	for key, val := range rec.Strings {
+		resMap[key] = val
+	}
+	for key, val := range rec.Ints {
+		resMap[key] = val
+	}
+	for key, val := range rec.Floats {
+		resMap[key] = val
+	}
+	for key, val := range rec.Bools {
+		resMap[key] = val
+	}
+	for key, val := range rec.Times {
+		resMap[key] = val
+	}
+	for key, val := range rec.Durations {
+		resMap[key] = val
+	}
+	for key, val := range rec.Nodes {
+		resMap[key] = val.Props()
+	}
+	for key, val := range rec.Relations {
+		resMap[key] = val.Props()
+	}
+	// NOTE we currently do not include any path in the map
+	for key, val := range rec.Others {
+		resMap[key] = val
+	}
+
+	return resMap
+}
 
 // DecodeNode is an utilitary function that automatically decodes a node from the record object
 func (rec *RecordMap) DecodeNode(decoder Decoder, nodeName string, outpout interface{}) Neo4GoError {
