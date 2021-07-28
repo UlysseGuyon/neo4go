@@ -157,7 +157,7 @@ func (m *manager) init(options ManagerOptions) Neo4GoError {
 	)
 
 	if err != nil {
-		return ToDriverError(err)
+		return toDriverError(err)
 	}
 
 	m.options = &options
@@ -184,18 +184,18 @@ func (m *manager) Close() Neo4GoError {
 	for _, val := range m.transactionSessions {
 		err := val.transaction.Close()
 		if err != nil {
-			return ToDriverError(err)
+			return toDriverError(err)
 		}
 
 		err = val.session.Close()
 		if err != nil {
-			return ToDriverError(err)
+			return toDriverError(err)
 		}
 	}
 
 	err := (*m.driver).Close()
 	if err != nil {
-		return ToDriverError(err)
+		return toDriverError(err)
 	}
 
 	return nil
@@ -226,7 +226,7 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, Neo4GoError) {
 
 		rawResult, err = txSession.transaction.Run(queryParams.Query, paramsMap)
 		if err != nil {
-			return nil, ToDriverError(err)
+			return nil, toDriverError(err)
 		}
 
 		if queryParams.CommitOnSuccess {
@@ -253,14 +253,14 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, Neo4GoError) {
 			Bookmarks:    queryParams.Bookmarks,
 		})
 		if err != nil {
-			return nil, ToDriverError(err)
+			return nil, toDriverError(err)
 		}
 		defer usedSession.Close()
 
 		// Run the query with the new session and the query config
 		rawResult, err = usedSession.Run(queryParams.Query, paramsMap, queryParams.Configurers...)
 		if err != nil {
-			return nil, ToDriverError(err)
+			return nil, toDriverError(err)
 		}
 	}
 
@@ -293,7 +293,7 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, Neo4GoErro
 		Bookmarks:    params.Bookmarks,
 	})
 	if err != nil {
-		return "", ToDriverError(err)
+		return "", toDriverError(err)
 	}
 
 	// Then begin the transaction
@@ -301,9 +301,9 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, Neo4GoErro
 	if err != nil {
 		closeErr := session.Close()
 		if closeErr != nil {
-			return "", ToDriverError(closeErr)
+			return "", toDriverError(closeErr)
 		}
-		return "", ToDriverError(err)
+		return "", toDriverError(err)
 	}
 
 	// Finally, store the transaction and its session to the manager's map
@@ -330,11 +330,11 @@ func (m *manager) Commit(txID string) Neo4GoError {
 	// Commit the transaction and close its session
 	err := txSession.transaction.Commit()
 	if err != nil {
-		return ToDriverError(err)
+		return toDriverError(err)
 	}
 	err = txSession.session.Close()
 	if err != nil {
-		return ToDriverError(err)
+		return toDriverError(err)
 	}
 
 	// Remove the transaction from the manager store
@@ -356,11 +356,11 @@ func (m *manager) Rollback(txID string) Neo4GoError {
 	// Commit the transaction and close its session
 	err := txSession.transaction.Rollback()
 	if err != nil {
-		return ToDriverError(err)
+		return toDriverError(err)
 	}
 	err = txSession.session.Close()
 	if err != nil {
-		return ToDriverError(err)
+		return toDriverError(err)
 	}
 
 	// Remove the transaction from the manager store

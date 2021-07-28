@@ -577,23 +577,23 @@ func (rec *recordArray) CollectAndDecodeAsRelations(decoder Decoder, output inte
 // QueryResult is the equivalent of neo4j.Result for neo4go manager queries
 type QueryResult interface {
 	// Keys returns the keys available on the result set.
-	Keys() ([]string, error)
+	Keys() ([]string, Neo4GoError)
 
 	// Next returns true only if there is a record to be processed.
 	Next() bool
 
 	// Err returns the latest error that caused this Next to return false.
-	Err() error
+	Err() Neo4GoError
 
 	// Record returns the current typed record.
 	Record() (*RecordMap, Neo4GoError)
 
 	// Summary returns the summary information about the statement execution.
-	Summary() (neo4j.ResultSummary, error)
+	Summary() (neo4j.ResultSummary, Neo4GoError)
 
 	// Consume consumes the entire result and returns the summary information
 	// about the statement execution.
-	Consume() (neo4j.ResultSummary, error)
+	Consume() (neo4j.ResultSummary, Neo4GoError)
 
 	// RawResult allow to retrieve the non-typed neo4j.Result
 	RawResult() neo4j.Result
@@ -611,18 +611,18 @@ func Single(from QueryResult, err error) (*RecordMap, Neo4GoError) {
 			return nil, convertedErr
 		}
 
-		return nil, ToDriverError(err)
+		return nil, toDriverError(err)
 	}
 
 	if from.Next() {
 		record, err = from.Record()
 		if err != nil {
-			return nil, ToDriverError(err)
+			return nil, toDriverError(err)
 		}
 	}
 
 	if err := from.Err(); err != nil {
-		return nil, ToDriverError(err)
+		return nil, toDriverError(err)
 	}
 
 	if record == nil {
@@ -648,13 +648,13 @@ func Collect(from QueryResult, err error) ([]RecordMap, Neo4GoError) {
 	var list []RecordMap
 
 	if err != nil {
-		return nil, ToDriverError(err)
+		return nil, toDriverError(err)
 	}
 
 	for from.Next() {
 		record, err := from.Record()
 		if err != nil {
-			return nil, ToDriverError(err)
+			return nil, toDriverError(err)
 		}
 		if record == nil {
 			return nil, &internalErr.QueryError{
@@ -665,7 +665,7 @@ func Collect(from QueryResult, err error) ([]RecordMap, Neo4GoError) {
 	}
 
 	if err := from.Err(); err != nil {
-		return nil, ToDriverError(err)
+		return nil, toDriverError(err)
 	}
 
 	return list, nil
@@ -747,8 +747,13 @@ func newQueryResult(result neo4j.Result) QueryResult {
 }
 
 // Keys returns the keys available on the result set.
-func (res *queryResult) Keys() ([]string, error) {
-	return res.result.Keys()
+func (res *queryResult) Keys() ([]string, Neo4GoError) {
+	keys, err := res.result.Keys()
+	if err != nil {
+		return nil, toDriverError(err)
+	}
+
+	return keys, nil
 }
 
 // Next returns true only if there is a record to be processed.
@@ -757,8 +762,13 @@ func (res *queryResult) Next() bool {
 }
 
 // Err returns the latest error that caused this Next to return false.
-func (res *queryResult) Err() error {
-	return res.result.Err()
+func (res *queryResult) Err() Neo4GoError {
+	err := res.result.Err()
+	if err != nil {
+		return toDriverError(err)
+	}
+
+	return nil
 }
 
 // Record returns the current typed record.
@@ -779,14 +789,24 @@ func (res *queryResult) Record() (*RecordMap, Neo4GoError) {
 }
 
 // Summary returns the summary information about the statement execution.
-func (res *queryResult) Summary() (neo4j.ResultSummary, error) {
-	return res.result.Summary()
+func (res *queryResult) Summary() (neo4j.ResultSummary, Neo4GoError) {
+	sum, err := res.result.Summary()
+	if err != nil {
+		return nil, toDriverError(err)
+	}
+
+	return sum, nil
 }
 
 // Consume consumes the entire result and returns the summary information
 // about the statement execution.
-func (res *queryResult) Consume() (neo4j.ResultSummary, error) {
-	return res.result.Consume()
+func (res *queryResult) Consume() (neo4j.ResultSummary, Neo4GoError) {
+	sum, err := res.result.Consume()
+	if err != nil {
+		return nil, toDriverError(err)
+	}
+
+	return sum, nil
 }
 
 // RawResult allow to retrieve the non-typed neo4j.Result

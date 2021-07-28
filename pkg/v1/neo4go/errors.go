@@ -13,8 +13,8 @@ type Neo4GoError interface {
 	FmtError() string
 }
 
-// ToDriverError converts a raw error to a Neo4GoError, searching first for neo4j-go-driver errors
-func ToDriverError(err error) Neo4GoError {
+// toDriverError converts a raw error to a Neo4GoError, searching first for neo4j-go-driver errors
+func toDriverError(err error) Neo4GoError {
 	// First check for all the neo4j-go-driver errors
 	if neo4j.IsSecurityError(err) {
 		return &internalErr.SecurityError{
