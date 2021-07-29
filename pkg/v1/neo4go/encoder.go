@@ -132,7 +132,12 @@ func ComposeEncodeHookFunc(hooks ...EncodeHookFunc) EncodeHookFunc {
 var (
 	// The hook that detects potentially problematic values
 	defaultHookNil EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if i == nil || !v.IsValid() {
+		if !v.IsValid() {
+			return nil, true
+		}
+		if (v.Kind() == reflect.Chan || v.Kind() == reflect.Func || v.Kind() == reflect.Interface ||
+			v.Kind() == reflect.Map || v.Kind() == reflect.Ptr || v.Kind() == reflect.Slice) &&
+			v.IsNil() {
 			return nil, true
 		}
 
