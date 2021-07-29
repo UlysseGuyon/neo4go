@@ -22,6 +22,7 @@ type Decoder interface {
 	// DecodeNode takes a path like object (pointers are accepted) and decodes its nodes in the second argument and its relationships in the third
 	DecodePath(interface{}, interface{}, interface{}) Neo4GoError
 
+	// DecodeRecordMap takes a record map and decodes its raw values into the fields of the output
 	DecodeRecordMap(RecordMap, interface{}) Neo4GoError
 }
 
@@ -176,7 +177,7 @@ func (decoder *neo4goDecoder) DecodeNode(node interface{}, output interface{}) N
 		// If the input provides more nodes than the output can stock, the extra ones will NOT be decoded
 
 		for i := 0; i < outputReflect.Len(); i++ {
-			if i > len(resultArray) {
+			if i >= len(resultArray) {
 				return &internalErr.DecodingError{
 					Err: "Could not decode enough nodes to fit in output",
 				}
@@ -306,7 +307,7 @@ func (decoder *neo4goDecoder) DecodeRelationship(relationship interface{}, outpu
 		// If the input provides more relationships than the output can stock, the extra ones will NOT be decoded
 
 		for i := 0; i < outputReflect.Len(); i++ {
-			if i > len(resultArray) {
+			if i >= len(resultArray) {
 				return &internalErr.DecodingError{
 					Err: "Could not decode enough relationships to fit in output",
 				}
@@ -397,6 +398,7 @@ func (decoder *neo4goDecoder) DecodePath(path interface{}, outputNodes interface
 	return nil
 }
 
+// DecodeRecordMap takes a record map and decodes its raw values into the fields of the output
 func (decoder *neo4goDecoder) DecodeRecordMap(rec RecordMap, output interface{}) Neo4GoError {
 	return decoder.decodeSingleValue(rec.RawMap(), output)
 }
