@@ -6,6 +6,20 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+// queryOutputFlag represents the flags used to format a query ouput
+type queryOutputFlag uint
+
+const (
+	INCLUDE_NIL_IN_RECORDS queryOutputFlag = 1 << iota
+	KEEP_EMPTY_MAPS
+)
+
+func (b queryOutputFlag) SetQueryOuputFlag(flag queryOutputFlag) queryOutputFlag    { return b | flag }
+func (b queryOutputFlag) ClearQueryOuputFlag(flag queryOutputFlag) queryOutputFlag  { return b &^ flag }
+func (b queryOutputFlag) ToggleQueryOuputFlag(flag queryOutputFlag) queryOutputFlag { return b ^ flag }
+func (b queryOutputFlag) HasBaseQueryOuputFlag(flag queryOutputFlag) bool           { return (b & flag) != 0 }
+func (b queryOutputFlag) IsZeroQueryOuputFlag() bool                                { return b == 0 }
+
 // Manager is a wrapper around the neo4j-go-driver that simplifies its usage and adds type checking
 type Manager interface {
 	// IsConnected tells if the driver could effectively connect to the database
@@ -52,6 +66,9 @@ type ManagerOptions struct {
 
 	// The neo4j configurers to apply to the driver
 	Configurers []func(*neo4j.Config)
+
+	// The default formatting to apply to every query of this manager
+	DefaultOutputConfig queryOutputFlag
 }
 
 // QueryParams represents all the configuration of a single query transaction
@@ -73,6 +90,9 @@ type QueryParams struct {
 
 	// Whether to commit the transaction (if there is one for this query) after the successfull execution of the query
 	CommitOnSuccess bool
+
+	// The different configurations to apply to the output of the query
+	OutputConfig queryOutputFlag
 }
 
 // TransactionParams represents all the configuration of a single transaction at its creation
@@ -264,8 +284,14 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, Neo4GoError) {
 		}
 	}
 
+	// Chose an output config, with priority on the current query config
+	usedOutConfig := m.options.DefaultOutputConfig
+	if !queryParams.OutputConfig.IsZeroQueryOuputFlag() {
+		usedOutConfig = queryParams.OutputConfig
+	}
+
 	// Convert the raw results as a collection of typed results
-	convertedResult := newQueryResult(rawResult)
+	convertedResult := newQueryResult(rawResult, usedOutConfig)
 
 	m.lastBookmark = usedSession.LastBookmark()
 

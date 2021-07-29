@@ -2,6 +2,7 @@ package neo4go
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
@@ -23,10 +24,12 @@ type RecordMap struct {
 	Relations map[string]neo4j.Relationship
 	Paths     map[string]neo4j.Path
 	Others    map[string]interface{}
+
+	flags queryOutputFlag
 }
 
 // newEmptyRecordMap returns a new RecordMap with each field initialized as an empty map
-func newEmptyRecordMap() RecordMap {
+func newEmptyRecordMap(flags queryOutputFlag) RecordMap {
 	return RecordMap{
 		Arrays:    make(map[string]RecordArray),
 		Maps:      make(map[string]RecordMap),
@@ -40,9 +43,19 @@ func newEmptyRecordMap() RecordMap {
 		Relations: make(map[string]neo4j.Relationship),
 		Paths:     make(map[string]neo4j.Path),
 		Others:    make(map[string]interface{}),
+		flags:     flags,
 	}
 }
 
+// IsEmpty tells if none of the maps in the record have any value
+func (rec *RecordMap) IsEmpty() bool {
+	return len(rec.Arrays) == 0 && len(rec.Maps) == 0 && len(rec.Strings) == 0 &&
+		len(rec.Ints) == 0 && len(rec.Floats) == 0 && len(rec.Bools) == 0 &&
+		len(rec.Times) == 0 && len(rec.Durations) == 0 && len(rec.Nodes) == 0 &&
+		len(rec.Relations) == 0 && len(rec.Paths) == 0 && len(rec.Others) == 0
+}
+
+// RawMap returns this RecordMap as a plain map[string]interface{}
 func (rec *RecordMap) RawMap() map[string]interface{} {
 	resMap := make(map[string]interface{})
 
@@ -238,11 +251,13 @@ type recordArray struct {
 
 	// Tells if the Next function was called at least once on this array
 	firstNext bool
+
+	flags queryOutputFlag
 }
 
 // NewRecordArray creates a new instance of RecordArray, with a given interface array.
-func NewRecordArray(rawArray []interface{}) RecordArray {
-	return &recordArray{rawArray: rawArray, currentIndex: 0, firstNext: true}
+func NewRecordArray(rawArray []interface{}, flags queryOutputFlag) RecordArray {
+	return &recordArray{rawArray: rawArray, currentIndex: 0, firstNext: true, flags: flags}
 }
 
 // getCurrent returns the item currently pointed to in the array, or nil if the index is out of bounds
@@ -256,14 +271,14 @@ func (rec *recordArray) getCurrent() interface{} {
 
 // Next iterates to the next item of the array and return false if there are no more items
 func (rec *recordArray) Next() bool {
-	if rec.currentIndex+1 >= len(rec.rawArray) {
-		return false
-	}
-
 	if rec.firstNext {
 		rec.firstNext = false
-	} else {
+	} else if rec.currentIndex < len(rec.rawArray) {
 		rec.currentIndex++
+	}
+
+	if rec.currentIndex >= len(rec.rawArray) {
+		return false
 	}
 
 	return true
@@ -278,7 +293,7 @@ func (rec *recordArray) Len() int {
 // The second result is a non-nil error if the current item cannot be converted as an Array.
 func (rec *recordArray) CurrentAsArray() (RecordArray, Neo4GoError) {
 	if arrayInterface, canConvert := rec.getCurrent().([]interface{}); canConvert {
-		return NewRecordArray(arrayInterface), nil
+		return NewRecordArray(arrayInterface, rec.flags), nil
 	}
 
 	return nil, &internalErr.TypeError{
@@ -292,7 +307,7 @@ func (rec *recordArray) CurrentAsArray() (RecordArray, Neo4GoError) {
 // The second result is a non-nil error if the current item cannot be converted as a Map.
 func (rec *recordArray) CurrentAsMap() (*RecordMap, Neo4GoError) {
 	if mapInterface, canConvert := rec.getCurrent().(map[string]interface{}); canConvert {
-		recordMap := decodeMap(mapInterface)
+		recordMap := decodeMap(mapInterface, rec.flags)
 		return &recordMap, nil
 	}
 
@@ -446,7 +461,9 @@ func (rec *recordArray) CollectAsMaps() ([]RecordMap, Neo4GoError) {
 		if err != nil {
 			return nil, err
 		}
-		resultArray = append(resultArray, *convertedItem)
+		if !convertedItem.IsEmpty() || rec.flags.HasBaseQueryOuputFlag(KEEP_EMPTY_MAPS) {
+			resultArray = append(resultArray, *convertedItem)
+		}
 	}
 
 	return resultArray, nil
@@ -712,12 +729,18 @@ func Collect(from QueryResult, err error) ([]RecordMap, Neo4GoError) {
 
 // decodeItemInRecordMap takes a string key and an interface value and put it inside the right map field of the result
 func decodeItemInRecordMap(key string, value interface{}, resultRecord *RecordMap) {
+	if resultRecord == nil || IsNil(reflect.ValueOf(value)) {
+		return
+	}
+
 	switch typedVal := value.(type) {
 	case []interface{}:
-		resultRecord.Arrays[key] = NewRecordArray(typedVal)
+		resultRecord.Arrays[key] = NewRecordArray(typedVal, resultRecord.flags)
 	case map[string]interface{}:
-		innerRecordMap := decodeMap(typedVal)
-		resultRecord.Maps[key] = innerRecordMap
+		innerRecordMap := decodeMap(typedVal, resultRecord.flags)
+		if !innerRecordMap.IsEmpty() || resultRecord.flags.HasBaseQueryOuputFlag(KEEP_EMPTY_MAPS) {
+			resultRecord.Maps[key] = innerRecordMap
+		}
 	case string:
 		resultRecord.Strings[key] = typedVal
 	case int64:
@@ -760,11 +783,11 @@ func decodeItemInRecordMap(key string, value interface{}, resultRecord *RecordMa
 }
 
 // decodeMap takes a map as input and converts it into a RecordMap for simplicity of use
-func decodeMap(mapInterface map[string]interface{}) RecordMap {
-	newRecordMap := newEmptyRecordMap()
+func decodeMap(mapInterface map[string]interface{}, flags queryOutputFlag) RecordMap {
+	newRecordMap := newEmptyRecordMap(flags)
 
 	for key, val := range mapInterface {
-		if val == nil {
+		if IsNil(reflect.ValueOf(val)) && !flags.HasBaseQueryOuputFlag(INCLUDE_NIL_IN_RECORDS) {
 			continue
 		}
 
@@ -778,11 +801,14 @@ func decodeMap(mapInterface map[string]interface{}) RecordMap {
 type queryResult struct {
 	// The raw neo4j result of the query
 	result neo4j.Result
+
+	// The formatting to apply to the records of this result
+	flags queryOutputFlag
 }
 
 // newQueryResult creates a new instance of QueryResult, with a given raw neo4j query result.
-func newQueryResult(result neo4j.Result) QueryResult {
-	return &queryResult{result: result}
+func newQueryResult(result neo4j.Result, flags queryOutputFlag) QueryResult {
+	return &queryResult{result: result, flags: flags}
 }
 
 // Keys returns the keys available on the result set.
@@ -814,17 +840,18 @@ func (res *queryResult) Err() Neo4GoError {
 func (res *queryResult) Record() (*RecordMap, Neo4GoError) {
 	record := res.result.Record()
 
-	newRecordMap := newEmptyRecordMap()
+	newMap := make(map[string]interface{})
 	for _, recordKey := range record.Keys() {
 		recordValue, exists := record.Get(recordKey)
-		if !exists || recordValue == nil {
+		if !exists {
 			continue
 		}
-
-		decodeItemInRecordMap(recordKey, recordValue, &newRecordMap)
+		newMap[recordKey] = recordValue
 	}
 
-	return &newRecordMap, nil
+	resRecord := decodeMap(newMap, res.flags)
+
+	return &resRecord, nil
 }
 
 // Summary returns the summary information about the statement execution.
