@@ -1,6 +1,8 @@
 package neo4go
 
 import (
+	"sync"
+
 	internalErr "github.com/UlysseGuyon/neo4go/internal/errors"
 	"github.com/neo4j/neo4j-go-driver/neo4j"
 	uuid "github.com/satori/go.uuid"
@@ -129,6 +131,9 @@ type manager struct {
 
 	// The map of transactions currently running, with their IDs as keys
 	transactionSessions map[string]transactionSession
+
+	// The mutex used to prevent concurent writes to the transaction/session map
+	transactionSessionsMutex sync.RWMutex
 }
 
 // NewManager creates a new instance of Manager, with a given config.
@@ -184,6 +189,7 @@ func (m *manager) init(options ManagerOptions) Neo4GoError {
 	m.driver = &newDriver
 
 	m.transactionSessions = make(map[string]transactionSession)
+	m.transactionSessionsMutex = sync.RWMutex{}
 
 	return nil
 }
@@ -230,7 +236,9 @@ func (m *manager) Query(queryParams QueryParams) (QueryResult, Neo4GoError) {
 	}
 
 	// Search an existing transaction with the given ID
+	m.transactionSessionsMutex.RLock()
 	txSession, useTransaction := m.transactionSessions[queryParams.Transaction]
+	m.transactionSessionsMutex.RUnlock()
 	if !useTransaction && queryParams.Transaction != "" {
 		return nil, &internalErr.TransactionError{
 			Err: "Trying to query with a non existing transaction",
@@ -335,10 +343,12 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, Neo4GoErro
 	// Finally, store the transaction and its session to the manager's map
 	newTxID := newTxUUID.String()
 
+	m.transactionSessionsMutex.Lock()
 	m.transactionSessions[newTxID] = transactionSession{
 		session:     session,
 		transaction: tx,
 	}
+	m.transactionSessionsMutex.Unlock()
 
 	return newTxID, nil
 }
@@ -346,7 +356,9 @@ func (m *manager) BeginTransaction(params TransactionParams) (string, Neo4GoErro
 // Commit commits the transaction that has the given ID
 func (m *manager) Commit(txID string) Neo4GoError {
 	// Get the transaction and its session from ID
+	m.transactionSessionsMutex.RLock()
 	txSession, exists := m.transactionSessions[txID]
+	m.transactionSessionsMutex.RUnlock()
 	if !exists {
 		return &internalErr.TransactionError{
 			Err: "Trying to commit a non existing transaction",
@@ -364,7 +376,9 @@ func (m *manager) Commit(txID string) Neo4GoError {
 	}
 
 	// Remove the transaction from the manager store
+	m.transactionSessionsMutex.Lock()
 	delete(m.transactionSessions, txID)
+	m.transactionSessionsMutex.Unlock()
 
 	return nil
 }
@@ -372,7 +386,9 @@ func (m *manager) Commit(txID string) Neo4GoError {
 // Rollback rolls back the transaction that has the given ID
 func (m *manager) Rollback(txID string) Neo4GoError {
 	// Get the transaction and its session from ID
+	m.transactionSessionsMutex.RLock()
 	txSession, exists := m.transactionSessions[txID]
+	m.transactionSessionsMutex.RUnlock()
 	if !exists {
 		return &internalErr.TransactionError{
 			Err: "Trying to rollback a non existing transaction",
@@ -390,7 +406,9 @@ func (m *manager) Rollback(txID string) Neo4GoError {
 	}
 
 	// Remove the transaction from the manager store
+	m.transactionSessionsMutex.Lock()
 	delete(m.transactionSessions, txID)
+	m.transactionSessionsMutex.Unlock()
 
 	return nil
 }
