@@ -93,16 +93,7 @@ func (encoder *neo4goEncoder) getDefaultHook() EncodeHookFunc {
 		defaultHookString,
 		defaultHookByteArray,
 		defaultHookDateTime,
-		defaultHookDate,
-		defaultHookTime,
-		defaultHookLocalTime,
-		defaultHookLocalDateTime,
-		defaultHookDuration,
-		defaultHookGoDuration,
 		defaultHookPoint,
-		defaultHookNode,
-		defaultHookRelationship,
-		defaultHookPath,
 		defaultHookStruct(encoder.options.TagName, encoder),
 		defaultHookArray(encoder),
 		defaultHookMap(encoder),
@@ -215,75 +206,9 @@ var (
 	// The hook that encodes time values as local datetimes. This will always store time values as UTC
 	defaultHookDateTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
 		if timeVal, canConvert := i.(time.Time); canConvert {
-			return NewInputUTCTime(&timeVal), true
+			return NewInputDateTime(&timeVal), true
 		} else if timeVal, canConvert := i.(*time.Time); canConvert {
-			return NewInputUTCTime(timeVal), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes neo4j dates
-	defaultHookDate EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if dateVal, canConvert := i.(neo4j.Date); canConvert {
-			return NewInputDate(&dateVal), true
-		} else if dateVal, canConvert := i.(*neo4j.Date); canConvert {
-			return NewInputDate(dateVal), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes neo4j offset times
-	defaultHookTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if oofsetTimeVal, canConvert := i.(neo4j.OffsetTime); canConvert {
-			return NewInputTime(&oofsetTimeVal), true
-		} else if oofsetTimeVal, canConvert := i.(*neo4j.OffsetTime); canConvert {
-			return NewInputTime(oofsetTimeVal), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes neo4j local times
-	defaultHookLocalTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if localTimeVal, canConvert := i.(neo4j.LocalTime); canConvert {
-			return NewInputLocalTime(&localTimeVal), true
-		} else if localTimeVal, canConvert := i.(*neo4j.LocalTime); canConvert {
-			return NewInputLocalTime(localTimeVal), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes neo4j local date times
-	defaultHookLocalDateTime EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if localDateTimeVal, canConvert := i.(neo4j.LocalDateTime); canConvert {
-			return NewInputLocalDateTime(&localDateTimeVal), true
-		} else if localDateTimeVal, canConvert := i.(*neo4j.LocalDateTime); canConvert {
-			return NewInputLocalDateTime(localDateTimeVal), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes neo4j durations
-	defaultHookDuration EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if duration, canConvert := i.(neo4j.Duration); canConvert {
-			return NewInputDuration(&duration), true
-		} else if duration, canConvert := i.(*neo4j.Duration); canConvert {
-			return NewInputDuration(duration), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes golang duration values as neo4j durations
-	defaultHookGoDuration EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if duration, canConvert := i.(time.Duration); canConvert {
-			return NewInputGoDuration(&duration), true
-		} else if duration, canConvert := i.(*time.Duration); canConvert {
-			return NewInputGoDuration(duration), true
+			return NewInputDateTime(timeVal), true
 		}
 
 		return nil, false
@@ -295,48 +220,6 @@ var (
 			return NewInputPoint(&point), true
 		} else if point, canConvert := i.(*neo4j.Point); canConvert {
 			return NewInputPoint(point), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes neo4j node values
-	defaultHookNode EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if node, canConvert := i.(neo4j.Node); canConvert {
-			return NewInputNode(node), true
-		} else if node, canConvert := i.(*neo4j.Node); canConvert {
-			if node == nil {
-				return nil, true
-			}
-			return NewInputNode(*node), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes neo4j relationship values
-	defaultHookRelationship EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if relationship, canConvert := i.(neo4j.Relationship); canConvert {
-			return NewInputRelationship(relationship), true
-		} else if relationship, canConvert := i.(*neo4j.Relationship); canConvert {
-			if relationship == nil {
-				return nil, true
-			}
-			return NewInputRelationship(*relationship), true
-		}
-
-		return nil, false
-	}
-
-	// The hook that encodes neo4j path values
-	defaultHookPath EncodeHookFunc = func(v reflect.Value, i interface{}) (InputStruct, bool) {
-		if path, canConvert := i.(neo4j.Path); canConvert {
-			return NewInputPath(path), true
-		} else if path, canConvert := i.(*neo4j.Path); canConvert {
-			if path == nil {
-				return nil, true
-			}
-			return NewInputPath(*path), true
 		}
 
 		return nil, false

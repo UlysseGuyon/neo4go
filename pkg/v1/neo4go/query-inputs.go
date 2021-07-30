@@ -245,84 +245,6 @@ func (val *inputByteArray) PrimitiveConvert() interface{} {
 	return val.Value
 }
 
-// inputDate is an implementation of the primitiveInputObject for the neo4j Date type
-type inputDate struct {
-	Value *neo4j.Date
-}
-
-// NewInputDate creates a primitiveInputObject from the golang type neo4j.Date
-func NewInputDate(value *neo4j.Date) InputStruct {
-	return &inputDate{Value: value}
-}
-
-// ConvertToMap converts this input as a map of query inputs
-func (val *inputDate) ConvertToMap() map[string]InputStruct {
-	return nil
-}
-
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputDate) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputDate) PrimitiveConvert() interface{} {
-	return val.Value
-}
-
-// inputTime is an implementation of the primitiveInputObject for the neo4j OffsetTime type
-type inputTime struct {
-	Value *neo4j.OffsetTime
-}
-
-// NewInputTime creates a primitiveInputObject from the golang type neo4j.OffsetTime
-func NewInputTime(value *neo4j.OffsetTime) InputStruct {
-	return &inputTime{Value: value}
-}
-
-// ConvertToMap converts this input as a map of query inputs
-func (val *inputTime) ConvertToMap() map[string]InputStruct {
-	return nil
-}
-
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputTime) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputTime) PrimitiveConvert() interface{} {
-	return val.Value
-}
-
-// inputLocalTime is an implementation of the primitiveInputObject for the neo4j LocalTime type
-type inputLocalTime struct {
-	Value *neo4j.LocalTime
-}
-
-// NewInputLocalTime creates a primitiveInputObject from the golang type neo4j.LocalTime
-func NewInputLocalTime(value *neo4j.LocalTime) InputStruct {
-	return &inputLocalTime{Value: value}
-}
-
-// ConvertToMap converts this input as a map of query inputs
-func (val *inputLocalTime) ConvertToMap() map[string]InputStruct {
-	return nil
-}
-
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputLocalTime) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputLocalTime) PrimitiveConvert() interface{} {
-	return val.Value
-}
-
 // inputDateTime is an implementation of the primitiveInputObject for the neo4j DateTime type
 type inputDateTime struct {
 	Value *time.Time
@@ -346,70 +268,11 @@ func (val *inputDateTime) ConvertToInputObject() InputStruct {
 // PrimitiveConvert directly converts the object as an interface and
 // should not be used outside of this package to allow fully functionning type checking
 func (val *inputDateTime) PrimitiveConvert() interface{} {
-	return val.Value
-}
-
-// inputLocalDateTime is an implementation of the primitiveInputObject for the neo4j LocalDateTime type
-type inputLocalDateTime struct {
-	Value *neo4j.LocalDateTime
-}
-
-// NewInputLocalDateTime creates a primitiveInputObject from the golang type neo4j.LocalDateTime
-func NewInputLocalDateTime(value *neo4j.LocalDateTime) InputStruct {
-	return &inputLocalDateTime{Value: value}
-}
-
-// NewInputUTCTime creates a primitiveInputObject from the golang type time.Time (always changed to UTC)
-func NewInputUTCTime(value *time.Time) InputStruct {
-	newLDT := neo4j.LocalDateTimeOf(value.UTC())
-	return &inputLocalDateTime{Value: &newLDT}
-}
-
-// ConvertToMap converts this input as a map of query inputs
-func (val *inputLocalDateTime) ConvertToMap() map[string]InputStruct {
-	return nil
-}
-
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputLocalDateTime) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputLocalDateTime) PrimitiveConvert() interface{} {
-	return val.Value
-}
-
-// inputDuration is an implementation of the primitiveInputObject for the neo4j neo4j.Duration type
-type inputDuration struct {
-	Value *neo4j.Duration
-}
-
-// NewInputDuration creates a primitiveInputObject from the golang type
-func NewInputDuration(value *neo4j.Duration) InputStruct {
-	return &inputDuration{Value: value}
-}
-
-func NewInputGoDuration(value *time.Duration) InputStruct {
-	durationValNeo4j := neo4j.DurationOf(0, int64(value.Hours()/24), int64(value.Seconds()), int(value.Nanoseconds()))
-	return &inputDuration{Value: &durationValNeo4j}
-}
-
-// ConvertToMap converts this input as a map of query inputs
-func (val *inputDuration) ConvertToMap() map[string]InputStruct {
-	return nil
-}
-
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputDuration) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputDuration) PrimitiveConvert() interface{} {
-	return val.Value
+	if val.Value == nil {
+		return nil
+	} else {
+		return *(val.Value)
+	}
 }
 
 // inputPoint is an implementation of the primitiveInputObject for the neo4j Point type
@@ -435,83 +298,5 @@ func (val *inputPoint) ConvertToInputObject() InputStruct {
 // PrimitiveConvert directly converts the object as an interface and
 // should not be used outside of this package to allow fully functionning type checking
 func (val *inputPoint) PrimitiveConvert() interface{} {
-	return val.Value
-}
-
-// inputNode is an implementation of the primitiveInputObject for the neo4j Node type
-type inputNode struct {
-	Value neo4j.Node
-}
-
-// NewInputNode creates a primitiveInputObject from the golang type neo4j.Node
-func NewInputNode(value neo4j.Node) InputStruct {
-	return &inputNode{Value: value}
-}
-
-// ConvertToMap converts this input as a map of query inputs
-func (val *inputNode) ConvertToMap() map[string]InputStruct {
-	return nil
-}
-
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputNode) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputNode) PrimitiveConvert() interface{} {
-	return val.Value
-}
-
-// inputRelationship is an implementation of the primitiveInputObject for the neo4j Relationship type
-type inputRelationship struct {
-	Value neo4j.Relationship
-}
-
-// NewInputRelationship creates a primitiveInputObject from the golang type neo4j.Relationship
-func NewInputRelationship(value neo4j.Relationship) InputStruct {
-	return &inputRelationship{Value: value}
-}
-
-// ConvertToMap converts this input as a map of query inputs
-func (val *inputRelationship) ConvertToMap() map[string]InputStruct {
-	return nil
-}
-
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputRelationship) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputRelationship) PrimitiveConvert() interface{} {
-	return val.Value
-}
-
-// inputPath is an implementation of the primitiveInputObject for the neo4j Path type
-type inputPath struct {
-	Value neo4j.Path
-}
-
-// NewInputPath creates a primitiveInputObject from the golang type neo4j.Path
-func NewInputPath(value neo4j.Path) InputStruct {
-	return &inputPath{Value: value}
-}
-
-// ConvertToMap converts this input as a map of query inputs
-func (val *inputPath) ConvertToMap() map[string]InputStruct {
-	return nil
-}
-
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputPath) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputPath) PrimitiveConvert() interface{} {
-	return val.Value
+	return val.Value // NOTE should always return the ptr value since the neo4j dehydrator only knows that
 }
