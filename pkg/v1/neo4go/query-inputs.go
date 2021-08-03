@@ -287,16 +287,15 @@ func NewInputPoint(value *neo4j.Point) InputStruct {
 
 // ConvertToMap converts this input as a map of query inputs
 func (val *inputPoint) ConvertToMap() map[string]InputStruct {
-	return nil
-}
+	x := val.Value.X()
+	y := val.Value.Y()
+	z := val.Value.Z()
+	srid := int64(val.Value.SrId())
 
-// ConvertToInputObject directly converts the object as an input object?
-func (val *inputPoint) ConvertToInputObject() InputStruct {
-	return val
-}
-
-// PrimitiveConvert directly converts the object as an interface and
-// should not be used outside of this package to allow fully functionning type checking
-func (val *inputPoint) PrimitiveConvert() interface{} {
-	return val.Value // NOTE should always return the ptr value since the neo4j dehydrator only knows that
+	return map[string]InputStruct{
+		"x":    NewInputFloat(&x),
+		"y":    NewInputFloat(&y),
+		"z":    NewInputFloat(&z),
+		"srid": NewInputInteger(&srid),
+	}
 }
